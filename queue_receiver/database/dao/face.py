@@ -1,5 +1,5 @@
-from models import Face
-from database import Session
+from ..models import Face
+from ..database import Session
 
 class FaceDAO:
     
@@ -19,7 +19,7 @@ class FaceDAO:
             new_face = Face(frame_file_path=frame_file_path, x=x, y=y, width=width, height=height)
             session.add(new_face)
             session.commit()
-            return new_face
+            return new_face.to_json()
 
     @staticmethod
     def update_face(face_id, **kwargs):

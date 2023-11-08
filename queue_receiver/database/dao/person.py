@@ -1,5 +1,5 @@
-from models import Person
-from database import Session
+from ..models import Person
+from ..database import Session
 
 class PersonDAO:
     
@@ -19,7 +19,7 @@ class PersonDAO:
             new_person = Person(name=name)
             session.add(new_person)
             session.commit()
-            return new_person
+            return new_person.to_json()
 
     @staticmethod
     def update_person(person_id, **kwargs):
@@ -41,3 +41,5 @@ class PersonDAO:
                 session.delete(person)
                 session.commit()
             return person
+        
+    
