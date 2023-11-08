@@ -1,0 +1,60 @@
+version: '3'
+
+services:
+    rabbitmq:
+        image: 'rabbitmq:3-management'
+        ports:
+            - '5672:5672'
+            - '15672:15672'
+        healthcheck:
+            test: ['CMD', 'rabbitmq-diagnostics', 'status']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        environment:
+            RABBITMQ_DEFAULT_USER: rabbitmq
+            RABBITMQ_DEFAULT_PASS: rabbitmq
+            RABBITMQ_DEFAULT_VHOST: /
+        networks:
+            - bsm
+
+    redis:
+        image: redis
+        ports:
+            - '6379:6379'
+        networks:
+            - bsm
+        volumes:
+            - ./redis_connection/redis.conf:/usr/local/etc/redis/redis.conf
+            - ./backup/redis_data:/data
+        command: redis-server /usr/local/etc/redis/redis.conf
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    camera-frame-capture:
+        build:
+            context: camera-frame-capture
+            dockerfile: dockerfile
+        depends_on:
+            redis:
+                condition: service_healthy
+        environment:
+            RABBITMQ_HOST: rabbitmq
+            RABBITMQ_PORT: 5672
+            RABBITMQ_USER: rabbitmq
+            RABBITMQ_PASSWORD: rabbitmq
+            RABBITMQ_EXCHANGE: camera-frame-capture
+            CAMERA_URL: rtsp://0.tcp.ap.ngrok.io:10708/user:1cinnovation;pwd:1cinnovation123
+            CAMERA_INFO: Living Room
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            REDIS_KEY: frames
+        networks:
+            - bsm
+
+networks:
+    bsm:
+        driver: bridge
