@@ -1,7 +1,9 @@
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.inspection import inspect
-import datetime 
+
+from database import Session
+import datetime
 
 Base = declarative_base()
 
@@ -23,16 +25,13 @@ class Storage(Base):
         return fields
 
 
-engine = create_engine("sqlite:///file_name_storage.db")
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
-
-
 class StorageDAO:
     @staticmethod
     def get(stored_name):
         with Session() as session:
-            storage_object = session.query(Storage).filter_by(stored_name=stored_name).first()
+            storage_object = (
+                session.query(Storage).filter_by(stored_name=stored_name).first()
+            )
             if storage_object:
                 # Change object to json so it's like a line in the old json file
                 storage_object = storage_object.to_json()
@@ -65,5 +64,3 @@ class StorageDAO:
             session.add(new_storage)
             session.commit()
             return new_storage
-
-

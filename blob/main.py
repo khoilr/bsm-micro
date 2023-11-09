@@ -1,4 +1,3 @@
-import json
 import os
 import shutil
 from datetime import datetime
@@ -7,15 +6,14 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from models import StorageDAO, engine
-from sqlalchemy.orm import sessionmaker
+
+from models import StorageDAO
+from database import Session
 
 # Define a base path for uploads
 UPLOADS_DIR = "uploads"
-METADATA_FILE = "metadata.json"
 
 # Create database session
-Session = sessionmaker(bind=engine)
 session = Session()
 
 
