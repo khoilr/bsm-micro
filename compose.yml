@@ -1,6 +1,15 @@
 version: '3'
 
 services:
+    blob:
+        build:
+            context: blob
+        restart: 'always'
+        ports:
+            - '32000:8000'
+        networks:
+            - bsm
+
     rabbitmq:
         image: 'rabbitmq:3-management'
         ports:
@@ -21,7 +30,6 @@ services:
     camera-frame-capture:
         build:
             context: camera-frame-capture
-            dockerfile: dockerfile
         depends_on:
             rabbitmq:
                 condition: service_healthy
