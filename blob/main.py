@@ -8,6 +8,13 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+
+def create_upload_dir():
+    Path(UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
+
+
+create_upload_dir()
+
 app = FastAPI()
 
 # Define a base path for uploads
@@ -18,13 +25,8 @@ METADATA_FILE = "metadata.json"
 app.mount("/blob", StaticFiles(directory=UPLOADS_DIR), name="blob")
 
 
-def create_upload_dir():
-    Path(UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
-
-
 @app.on_event("startup")
 async def on_startup():
-    # Ensure the upload directory exists
     create_upload_dir()
 
 
