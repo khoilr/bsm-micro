@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.inspection import inspect
 
-from database import Session
+from database import session
 import datetime
 
 Base = declarative_base()
@@ -28,39 +28,36 @@ class Storage(Base):
 class StorageDAO:
     @staticmethod
     def get(stored_name):
-        with Session() as session:
-            storage_object = (
-                session.query(Storage).filter_by(stored_name=stored_name).first()
-            )
-            if storage_object:
-                # Change object to json so it's like a line in the old json file
-                storage_object = storage_object.to_json()
-                return storage_object
-            else:
-                return None
+        storage_object = (
+            session.query(Storage).filter_by(stored_name=stored_name).first()
+        )
+        if storage_object:
+            # Change object to json so it's like a line in the old json file
+            storage_object = storage_object.to_json()
+            return storage_object
+        else:
+            return None
 
     @staticmethod
     def delete(stored_name):
-        with Session() as session:
-            obj_to_delete = (
-                session.query(Storage).filter_by(stored_name=stored_name).first()
-            )
-            if obj_to_delete:
-                session.delete(obj_to_delete)
-                session.commit()
-                return True
-            else:
-                return False
+        obj_to_delete = (
+            session.query(Storage).filter_by(stored_name=stored_name).first()
+        )
+        if obj_to_delete:
+            session.delete(obj_to_delete)
+            session.commit()
+            return True
+        else:
+            return False
 
     @staticmethod
     def create(original_name: str, stored_name: str, created_at: str, file_size: int):
-        with Session() as session:
-            new_storage = Storage(
-                original_name=original_name,
-                stored_name=stored_name,
-                created_at=created_at,
-                file_size=file_size,
-            )
-            session.add(new_storage)
-            session.commit()
-            return new_storage
+        new_storage = Storage(
+            original_name=original_name,
+            stored_name=stored_name,
+            created_at=created_at,
+            file_size=file_size,
+        )
+        session.add(new_storage)
+        session.commit()
+        return new_storage

@@ -8,13 +8,10 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from models import StorageDAO
-from database import Session
 
 # Define a base path for uploads
 UPLOADS_DIR = "uploads"
 
-# Create database session
-session = Session()
 
 
 def create_upload_dir():
