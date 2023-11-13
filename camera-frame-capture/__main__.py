@@ -1,12 +1,13 @@
 import json
 import os
 from datetime import datetime
-import pika
+
 import cv2
+import pika
 from dotenv import load_dotenv
 from loguru import logger
 
-from constants import FRAME_FREQUENCY, MAX_CAP_OPEN_FAILURES, MAX_READ_FRAME_FAILURES
+from constants import FRAME_FREQUENCY, MAX_CAP_OPEN_FAILURES, MAX_READ_FRAME_FAILURES, SEND_FRAME_FREQUENCY
 
 load_dotenv()
 
@@ -21,6 +22,12 @@ rabbitmq_vhost = os.environ.get("RABBITMQ_VHOST", "/")
 rabbitmq_exchange = os.environ.get("RABBITMQ_EXCHANGE", "frames")
 rabbitmq_exchange_type = os.environ.get("RABBITMQ_EXCHANGE_TYPE", "fanout")
 
+# Parse webcam (development)
+try:
+    camera_url = int(camera_url)
+except ValueError:
+    pass
+
 # Configure logger
 logger.add(f"logs/{datetime.now().astimezone().isoformat()}.log", rotation="500 MB")
 
@@ -34,11 +41,23 @@ channel = connection.channel()
 channel.exchange_declare(exchange=rabbitmq_exchange, exchange_type=rabbitmq_exchange_type)
 
 
+def send_frame_to_rabbitmq(frame):
+    """Send a frame to the RabbitMQ exchange."""
+    frame_info = {
+        "camera_info": camera_info,
+        "frame": frame.tolist(),
+        "timestamp": int(datetime.now().timestamp()),
+    }
+    channel.basic_publish(
+        exchange=rabbitmq_exchange,
+        routing_key="",
+        body=json.dumps(frame_info),
+    )
+    logger.info(f'Sent frame to exchange "{rabbitmq_exchange}".')
+
+
 def main():
     """Handle errors and restart the camera if necessary."""
-
-    frame_counter = 0
-    read_frame_failures_counter = 0
     cap_open_failures_counter = 0
 
     while cap_open_failures_counter < MAX_CAP_OPEN_FAILURES:
@@ -49,9 +68,11 @@ def main():
             cap_open_failures_counter += 1
             continue
 
+        # Connect successfully
         logger.info("Connected to the camera.")
-        cap_open_failures_counter = 0
         read_frame_failures_counter = 0
+        frames_counter = 1
+        sent_frames_counter = 1
 
         while read_frame_failures_counter < MAX_READ_FRAME_FAILURES:
             ret, frame = cap.read()
@@ -61,25 +82,21 @@ def main():
                 read_frame_failures_counter += 1
                 continue
 
+            # Capture successfully
             read_frame_failures_counter = 0
-            frame_counter += 1
 
-            if frame_counter % FRAME_FREQUENCY == 0:
-                # Send to rabbitmq with camera info and current timestamp in second
-                frame_info = {
-                    "camera_info": camera_info,
-                    "frame": frame.tolist(),
-                    "timestamp": int(datetime.now().timestamp()),
-                }
-                channel.basic_publish(
-                    exchange=rabbitmq_exchange,
-                    routing_key="",
-                    body=json.dumps(frame_info),
-                )
-                logger.info(f'Sent frame to exchange "{rabbitmq_exchange}".')
+            # Increment frames_counter and sent_frames_counter
+            if frames_counter % FRAME_FREQUENCY == 0:
+                send_frame_to_rabbitmq(frame)
 
-            if cv2.waitKey(1) == ord("q"):
-                break
+                # Reset cap if sent_frames_counter reaches SEND_FRAME_FREQUENCY
+                if sent_frames_counter % SEND_FRAME_FREQUENCY == 0:
+                    logger.info(f"Sent {SEND_FRAME_FREQUENCY} frames. Restarting the camera...")
+                    cap.release()
+                    cap = cv2.VideoCapture(camera_url)
+                sent_frames_counter += 1
+
+            frames_counter += 1
 
         logger.error(f"Read frame failures reached {MAX_READ_FRAME_FAILURES}. Restarting the camera...")
 
