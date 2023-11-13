@@ -1,59 +1,34 @@
 import json
 import os
 from datetime import datetime
-import redis
+
 import cv2
 import numpy as np
-import pika
 import pytz
-from dotenv import load_dotenv
 
+from constants import IMAGE_DIR
+from logger import logger
+from processors.draw_info import draw_info
 from processors.recognize import recognize
+from rabbitmq import RabbitMQ
 
-load_dotenv()
+# # Create image dir
+# os.makedirs(IMAGE_DIR, exist_ok=True)
 
-# Environment variables
-rabbitmq_host = os.environ.get("RABBITMQ_HOST", "localhost")
-rabbitmq_port = os.environ.get("RABBITMQ_PORT", 5672)
-rabbitmq_username = os.environ.get("RABBITMQ_USERNAME", "rabbitmq")
-rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD", "rabbitmq")
-rabbitmq_vhost = os.environ.get("RABBITMQ_VHOST", "/")
-rabbitmq_exchange = os.environ.get("RABBITMQ_EXCHANGE", "camera_frame_capture")
-
-# Set up connection parameters
-credentials = pika.PlainCredentials(rabbitmq_username, rabbitmq_password)
-parameters = pika.ConnectionParameters(
-    host=rabbitmq_host,
-    port=rabbitmq_port,
-    virtual_host=rabbitmq_vhost,
-    credentials=credentials,
-)
-
-# Create connection and channel
-connection = pika.BlockingConnection(parameters)
-channel = connection.channel()
-
-# Declare exchange and queue
-channel.exchange_declare(exchange=rabbitmq_exchange, exchange_type="fanout")
-result = channel.queue_declare(queue="", exclusive=True)
-queue_name = result.method.queue
-channel.queue_bind(exchange=rabbitmq_exchange, queue=queue_name)
-
-# Delete file endwith .pkl in images directory
-for file in os.listdir("./images"):
-    if file.endswith(".pkl"):
-        os.remove(os.path.join("./images", file))
+# # Delete file endwith .pkl in images directory
+# for file in os.listdir(IMAGE_DIR):
+#     if file.endswith(".pkl"):
+#         os.remove(os.path.join(IMAGE_DIR, file))
 
 
 # Define callback function to print incoming messages
-def callback(ch, method, properties, body):
-    print("Received")
+def callback(ch, method, properties, body):  # pylint: disable=unused-argument
+    logger.info("[x] Received message")
+
     data = json.loads(body)
     frame = np.array(data["frame"], dtype=np.uint8)
-
-    # convert timestamp from data['timestamp'] as utc time zone
-    # convert utc time zone to local time zone
     timestamp = datetime.fromtimestamp(data["timestamp"], tz=pytz.utc).astimezone()
+    camera_info = data["camera_info"]
 
     # draw timestamp on frame at top right corner
     cv2.putText(
@@ -66,16 +41,44 @@ def callback(ch, method, properties, body):
         2,
     )
 
+    # draw camera info on frame at bottom left corner
+    cv2.putText(
+        frame,
+        camera_info,
+        (50, frame.shape[0] - 50),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        (0, 255, 0),
+        2,
+    )
+
     # save frame as image
     cv2.imwrite("frame.jpg", frame)
 
-    # results = recognize(frame)
+    results = recognize(frame)
 
-    # for result in results:
-    #     if result.empty:
-    #         cv2.imwrite("frame.jpg", frame)
+    for result in results:
+        if not result.empty:
+            name_counts = result["name"].value_counts()
+            most_common_name = name_counts.idxmax()
+            appearance_times = name_counts.max()
+            row = result[result["name"] == most_common_name]
+
+            image = draw_info(frame, row)
+
+            cv2.imwrite("frame_box.jpg", image)
+
+            if appearance_times < 3:
+                row["name"] = "Unknown"
+
+            image = draw_info(frame, row)
 
 
-# Start consuming messages
-channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
-channel.start_consuming()
+def main():
+    rabbitmq = RabbitMQ()
+    rabbitmq.consume(on_message_callback=callback)
+    rabbitmq.close()
+
+
+if __name__ == "__main__":
+    main()
