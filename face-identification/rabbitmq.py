@@ -15,6 +15,7 @@ rabbitmq_username = os.environ.get("RABBITMQ_USERNAME", "rabbitmq")
 rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD", "rabbitmq")
 rabbitmq_vhost = os.environ.get("RABBITMQ_VHOST", "/")
 rabbitmq_exchange = os.environ.get("RABBITMQ_EXCHANGE", "frames")
+rabbitmq_heartbeat_timeout = int(os.environ.get("RABBITMQ_HEARTBEAT_TIMEOUT", 600))
 
 
 class RabbitMQ:
@@ -34,6 +35,7 @@ class RabbitMQ:
             port=port,
             virtual_host=vhost,
             credentials=credentials,
+            heartbeat=rabbitmq_heartbeat_timeout,
         )
         self.connection = pika.BlockingConnection(parameters)
         self.channel = self.connection.channel()

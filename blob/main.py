@@ -13,7 +13,6 @@ from models import StorageDAO
 UPLOADS_DIR = "uploads"
 
 
-
 def create_upload_dir():
     Path(UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
 
@@ -21,6 +20,7 @@ def create_upload_dir():
 create_upload_dir()
 
 app = FastAPI()
+
 # Mount the 'public' directory as a static asset
 app.mount("/blob", StaticFiles(directory=UPLOADS_DIR), name="blob")
 

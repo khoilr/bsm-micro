@@ -1,9 +1,9 @@
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.inspection import inspect
+import datetime
 
 from database import session
-import datetime
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.inspection import inspect
+from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
@@ -16,9 +16,7 @@ class Storage(Base):
     file_size = Column(Integer)
 
     def to_json(self):
-        fields = {
-            c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs
-        }
+        fields = {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
         for field, value in fields.items():
             if isinstance(value, datetime.datetime):
                 fields[field] = value.isoformat()
@@ -28,9 +26,7 @@ class Storage(Base):
 class StorageDAO:
     @staticmethod
     def get(stored_name):
-        storage_object = (
-            session.query(Storage).filter_by(stored_name=stored_name).first()
-        )
+        storage_object = session.query(Storage).filter_by(stored_name=stored_name).first()
         if storage_object:
             # Change object to json so it's like a line in the old json file
             storage_object = storage_object.to_json()
@@ -40,9 +36,7 @@ class StorageDAO:
 
     @staticmethod
     def delete(stored_name):
-        obj_to_delete = (
-            session.query(Storage).filter_by(stored_name=stored_name).first()
-        )
+        obj_to_delete = session.query(Storage).filter_by(stored_name=stored_name).first()
         if obj_to_delete:
             session.delete(obj_to_delete)
             session.commit()

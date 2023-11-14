@@ -1,3 +1,4 @@
 uploads/**
 dockerfile
 metadata.json
+env

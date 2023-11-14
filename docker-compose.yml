@@ -7,7 +7,7 @@ services:
             - '40000:5672'
             - '41000:15672'
         healthcheck:
-            test: ['CMD', 'rabbitmq-diagnostics', 'status']
+            test: [ 'CMD', 'rabbitmq-diagnostics', 'status' ]
             interval: 20s
             timeout: 10s
             retries: 10
@@ -28,13 +28,47 @@ services:
         environment:
             RABBITMQ_HOST: rabbitmq
             RABBITMQ_PORT: 5672
-            RABBITMQ_USER: rabbitmq
+            RABBITMQ_USERNAME: rabbitmq
             RABBITMQ_PASSWORD: rabbitmq
             RABBITMQ_VHOST: /
             RABBITMQ_EXCHANGE: frames
             RABBITMQ_EXCHANGE_TYPE: fanout
+            RABBITMQ_HEARTBEAT_TIMEOUT: 3600
             CAMERA_URL: rtsp://0.tcp.ap.ngrok.io:10708/user:1cinnovation;pwd:1cinnovation123
             CAMERA_INFO: Living Room
+        networks:
+            - bsm-micro
+
+    face-identification-db:
+        image: postgres
+        restart: always
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: postgres
+        ports:
+            - '43000:5432'
+        networks:
+            - bsm-micro
+        healthcheck:
+            test: [ 'CMD', 'pg_isready', '-U', 'postgres' ]
+            interval: 20s
+            timeout: 10s
+            retries: 10
+
+    face-identification-migrator:
+        build:
+            context: face-identification
+            dockerfile: dockerfile.migrator
+        depends_on:
+            face-identification-db:
+                condition: service_healthy
+        environment:
+            POSTGRES_HOST: face-identification-db
+            POSTGRES_PORT: 5432
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: postgres
         networks:
             - bsm-micro
 
@@ -45,6 +79,10 @@ services:
         depends_on:
             rabbitmq:
                 condition: service_healthy
+            face-identification-db:
+                condition: service_healthy
+            face-identification-migrator:
+                condition: service_completed_successfully
         environment:
             RABBITMQ_HOST: rabbitmq
             RABBITMQ_PORT: 5672
@@ -52,8 +90,25 @@ services:
             RABBITMQ_PASSWORD: rabbitmq
             RABBITMQ_VHOST: /
             RABBITMQ_EXCHANGE: frames
+            RABBITMQ_HEARTBEAT_TIMEOUT: 3600
+            POSTGRES_HOST: face-identification-db
+            POSTGRES_PORT: 5432
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: postgres
         networks:
             - bsm-micro
+
+    blob:
+        restart: always
+        build:
+            context: blob
+        ports:
+            - '42000:8000'
+        networks:
+            - bsm-micro
+        volumes:
+            - ./blob/uploads:/uploads
 
 networks:
     bsm-micro:

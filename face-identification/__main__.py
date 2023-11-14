@@ -11,9 +11,17 @@ from logger import logger
 from processors.draw_info import draw_info
 from processors.recognize import recognize
 from rabbitmq import RabbitMQ
+from dotenv import load_dotenv
 
-# # Create image dir
-# os.makedirs(IMAGE_DIR, exist_ok=True)
+from blob import upload
+
+load_dotenv()
+
+blob_host = os.environ.get("BLOB_HOST", "localhost")
+blob_port = os.environ.get("BLOB_PORT", 8000)
+
+# Create image dir
+os.makedirs(IMAGE_DIR, exist_ok=True)
 
 # # Delete file endwith .pkl in images directory
 # for file in os.listdir(IMAGE_DIR):
@@ -25,36 +33,13 @@ from rabbitmq import RabbitMQ
 def callback(ch, method, properties, body):  # pylint: disable=unused-argument
     logger.info("[x] Received message")
 
+    # Get data from message
     data = json.loads(body)
     frame = np.array(data["frame"], dtype=np.uint8)
     timestamp = datetime.fromtimestamp(data["timestamp"], tz=pytz.utc).astimezone()
     camera_info = data["camera_info"]
 
-    # draw timestamp on frame at top right corner
-    cv2.putText(
-        frame,
-        timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-        (frame.shape[1] - 400, 50),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        (0, 255, 0),
-        2,
-    )
-
-    # draw camera info on frame at bottom left corner
-    cv2.putText(
-        frame,
-        camera_info,
-        (50, frame.shape[0] - 50),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        (0, 255, 0),
-        2,
-    )
-
-    # save frame as image
-    cv2.imwrite("frame.jpg", frame)
-
+    # Save frame to a temp file
     results = recognize(frame)
 
     for result in results:
@@ -64,14 +49,29 @@ def callback(ch, method, properties, body):  # pylint: disable=unused-argument
             appearance_times = name_counts.max()
             row = result[result["name"] == most_common_name]
 
-            image = draw_info(frame, row)
-
-            cv2.imwrite("frame_box.jpg", image)
-
             if appearance_times < 3:
                 row["name"] = "Unknown"
 
             image = draw_info(frame, row)
+
+            # Save frame and image into temp files
+            frame_temp = os.path.join(IMAGE_DIR, "frame.jpg")
+            image_temp = os.path.join(IMAGE_DIR, "image.jpg")
+
+            cv2.imwrite(frame_temp, frame)
+            cv2.imwrite(image_temp, image)
+
+            frame_blob = upload(frame_temp)
+            image_blob = upload(image_temp)
+
+            # Insert to database: camera (create if not exists), person (create if not exists), face
+            # camera = insert_or_get_camera(camera_info)
+            # person = insert_or_get_person(row['name'])
+            # face = insert_face(x: row['source_x'], y = row['source_y'], w = row['source_w'], h = row['source_h'], image_url = frame_blob['stored_name'], drew_image_url = image=image_blob['stored_name'], camera_id = camera.id, person_id = person.id)
+
+            # Delete temp files
+            os.remove(frame_temp)
+            os.remove(image_temp)
 
 
 def main():

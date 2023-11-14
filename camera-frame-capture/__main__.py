@@ -21,6 +21,7 @@ rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD", "guest")
 rabbitmq_vhost = os.environ.get("RABBITMQ_VHOST", "/")
 rabbitmq_exchange = os.environ.get("RABBITMQ_EXCHANGE", "frames")
 rabbitmq_exchange_type = os.environ.get("RABBITMQ_EXCHANGE_TYPE", "fanout")
+rabbitmq_heartbeat_timeout = int(os.environ.get("RABBITMQ_HEARTBEAT_TIMEOUT", 600))
 
 # Parse webcam (development)
 try:
@@ -33,7 +34,13 @@ logger.add(f"logs/{datetime.now().astimezone().isoformat()}.log", rotation="500 
 
 # RabbitMQ connection
 credentials = pika.PlainCredentials(username=rabbitmq_username, password=rabbitmq_password)
-parameters = pika.ConnectionParameters(rabbitmq_host, rabbitmq_port, "/", credentials)
+parameters = pika.ConnectionParameters(
+    host=rabbitmq_host,
+    port=rabbitmq_port,
+    virtual_host="/",
+    credentials=credentials,
+    heartbeat=rabbitmq_heartbeat_timeout,
+)
 connection = pika.BlockingConnection(parameters)
 channel = connection.channel()
 
