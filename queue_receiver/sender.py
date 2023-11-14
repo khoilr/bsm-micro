@@ -2,6 +2,7 @@ import asyncio
 import json
 from aio_pika import connect, Message, ExchangeType
 import json
+import uuid
 
 
 class RabbitMqProducerConfigure:
@@ -9,7 +10,7 @@ class RabbitMqProducerConfigure:
         self,
         host="localhost",
         exchange="direct_logs",
-        port=5672,
+        port=40000,
         user="rabbitmq",
         password="rabbitmq",
     ):
@@ -26,6 +27,7 @@ class RabbitmqProducer:
         self.connection = None
         self.channel = None
         self.exchange = None
+        self.futures = {}
 
     async def connect(self):
         self.connection = await connect(
@@ -36,19 +38,34 @@ class RabbitmqProducer:
         )
 
         self.channel = await self.connection.channel()
+        self.callback_queue = await self.channel.declare_queue(name="reply")
+        await self.callback_queue.consume(self.on_response)
         self.exchange = await self.channel.declare_exchange(
             self.config.exchange, ExchangeType.DIRECT
         )
 
-    async def send_message(self, routing_key, message):
+    async def send_message(self, routing_key: str, message: str):
+        correlation_id = str(uuid.uuid4())
+        self.futures[correlation_id] = asyncio.Future()
         message_body = json.dumps(message).encode()
         await self.exchange.publish(
             Message(
-                body=message_body, content_type="application/json", delivery_mode=2
+                body=message_body,
+                reply_to=self.callback_queue.name,
+                correlation_id=correlation_id,
+                content_type="application/json",
+                delivery_mode=2,
             ),
             routing_key=routing_key,
         )
-        print(f"Sent {routing_key} message: {message}")
+
+    async def on_response(self, message: Message):
+        correlation_id = message.correlation_id
+        payload = json.loads(message.body)
+        if correlation_id in self.futures:
+            payload = json.loads(message.body)
+            print(payload)
+            self.futures[correlation_id].set_result(message.body.decode())
 
     async def close_connection(self):
         await self.connection.close()
@@ -61,21 +78,21 @@ async def main():
     producer = RabbitmqProducer(config=producer_config)
     await producer.connect()
 
-    await producer.send_message(
-        "create",
-        json.dumps(
-            {
-                "person": {"name": "nghia pro"},
-                "description": "This is an item to create.",
-            }
-        ),
-    )
-    await producer.send_message(
-        "update",
-        json.dumps({"person": {"id": 23, "name": "nghia vjp"}}),
-    )
-    await producer.send_message("delete", json.dumps({"person": {"id": "1"}}))
-    # await producer.send_message("read", json.dumps({"item_id": "12345"}))
+    # await producer.send_message(
+    #     "create",
+    #     json.dumps(
+    #         {
+    #             "person": {"name": "heo pro"},
+    #             "description": "This is an item to create.",
+    #         }
+    #     ),
+    # )
+    # await producer.send_message(
+    #     "update",
+    #     json.dumps({"person": {"id": 23, "name": "heo vjp"}}),
+    # )
+    # await producer.send_message("delete", json.dumps({"person": {"id": "1"}}))
+    await producer.send_message("read", json.dumps({"person": {"id": 1}}))
 
     await producer.close_connection()
 

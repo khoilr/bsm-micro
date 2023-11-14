@@ -1,10 +1,10 @@
 import asyncio
 import json
-from aio_pika import connect, ExchangeType
+from aio_pika import connect, ExchangeType, Message
 from loguru import logger
 import json
 from database.dao import FaceDAO, PersonDAO
-from database.db_config import init_db, Session
+from database.db_config import init_db
 
 
 class MetaClass(type):
@@ -22,7 +22,7 @@ class RabbitMqServerConfigure(metaclass=MetaClass):
         host: str = "103.157.218.126",
         queue: str = "task",
         exchange: str = "direct_logs",
-        port: int = 5672,
+        port: int = 40000,
         user: str = "rabbitmq",
         password: str = "rabbitmq",
     ):
@@ -66,11 +66,20 @@ class RabbitmqServer:
             queue = await self.channel.get_queue(queue_name)
             await queue.consume(self.on_message)
 
-    async def on_message(self, message):
+    async def on_message(self, message: Message):
         async with message.process():
             payload = json.loads(message.body)
             operation = message.routing_key
-            await getattr(self, operation)(payload)
+            response = await getattr(self, operation)(payload)
+            print(response)
+            if message.reply_to:
+                await self.channel.default_exchange.publish(
+                    Message(
+                        body=json.dumps(response).encode(),
+                        correlation_id=message.correlation_id,
+                    ),
+                    routing_key=message.reply_to,
+                )
 
     async def create(self, payload):
         logger.info(f"Creating: {payload}")
@@ -98,10 +107,15 @@ class RabbitmqServer:
         person_data = data.get("person", None)
 
         if face_data:
-            pass
+            face_data = FaceDAO.get_face_by_id(face_id=face_data["id"]).to_json()
 
         if person_data:
-            pass
+            person_data = PersonDAO.get_person_by_id(person_id=person_data["id"])
+            person_data = person_data.to_json()
+
+        return_data = (face_data, person_data)
+        
+        return return_data
 
     async def update(self, payload):
         logger.info(f"Updating: {payload}")
