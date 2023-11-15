@@ -1,10 +1,9 @@
 from datetime import datetime
 
+from database.dao.intruderlog import LogDAO
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-
-from database.dao.intruderlog import LogDAO
 from web.api.utils import removeNoneParams
 
 router = APIRouter(prefix="/intruderlog")

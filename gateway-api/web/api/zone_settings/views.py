@@ -1,8 +1,7 @@
 import fastapi
+from database.dao.zone_setting import ZoneSettingDAO
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-
-from database.dao.zone_setting import ZoneSettingDAO
 
 router = APIRouter(prefix="/zone-settings")
 

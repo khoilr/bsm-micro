@@ -1,8 +1,18 @@
 from fastapi.routing import APIRouter
-
-from web.api import (action, attendance, authentication, camera, event, face,
-                     imagelive, intruder_log, log, people, zone,
-                     zone_settings)
+from web.api import (
+    action,
+    attendance,
+    authentication,
+    camera,
+    event,
+    face,
+    imagelive,
+    intruder_log,
+    log,
+    people,
+    zone,
+    zone_settings,
+)
 
 api_router = APIRouter()
 api_router.include_router(authentication.router)

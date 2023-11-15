@@ -1,8 +1,7 @@
 import fastapi
+from database.dao.action import ActionDAO
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-
-from database.dao.action import ActionDAO
 
 router = APIRouter(prefix="/action")
 

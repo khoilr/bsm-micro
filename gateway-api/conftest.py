@@ -2,17 +2,16 @@ from typing import Any, AsyncGenerator
 
 import nest_asyncio
 import pytest
+from database.config import MODELS_MODULES, TORTOISE_CONFIG
 from fakeredis import FakeServer
 from fakeredis.aioredis import FakeConnection
 from fastapi import FastAPI
 from httpx import AsyncClient
 from redis.asyncio import ConnectionPool
-from tortoise import Tortoise
-from tortoise.contrib.test import finalizer, initializer
-
-from database.config import MODELS_MODULES, TORTOISE_CONFIG
 from services.redis.dependency import get_redis_pool
 from settings import settings
+from tortoise import Tortoise
+from tortoise.contrib.test import finalizer, initializer
 from web.application import get_app
 
 nest_asyncio.apply()

@@ -1,10 +1,9 @@
 from typing import Optional
 
+from database.dao.event_log import EventLogDAO
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-
-from database.dao.event_log import EventLogDAO
 from web.api.utils import removeNoneParams
 
 router = APIRouter(prefix="/log")

@@ -1,9 +1,8 @@
 import json
 from typing import List, Union
 
-from tortoise.exceptions import DoesNotExist
-
 from database.models.attendance import AttendaceTrackingModel
+from tortoise.exceptions import DoesNotExist
 
 
 class AttendanceTrackingDAO:

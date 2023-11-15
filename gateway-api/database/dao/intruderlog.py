@@ -1,10 +1,10 @@
 import json
 from typing import List, Union
 
+from database.models.intruderlog import (
+    LogModel,  # Assuming this is the import path for LogModel
+)
 from tortoise.exceptions import DoesNotExist
-
-from database.models.intruderlog import \
-    LogModel  # Assuming this is the import path for LogModel
 
 
 class LogDAO:

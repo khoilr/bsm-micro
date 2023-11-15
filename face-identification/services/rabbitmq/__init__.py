@@ -2,7 +2,10 @@ import os
 
 import pika
 from dotenv import load_dotenv
-from logger import logger
+
+from services.logger import logger
+from services.rabbitmq.callbacks.frame import callback as frame_callback
+from services.rabbitmq.callbacks.rpc import callback as rpc_callback
 
 load_dotenv()
 
@@ -44,17 +47,23 @@ class RabbitMQ:
         self.queue = self.channel.queue_declare(queue="", exclusive=True)
         self.queue_name = self.queue.method.queue
         self.channel.queue_bind(exchange=rabbitmq_exchange, queue=self.queue_name)
-    
-    def consume(self, on_message_callback):
+
+        # Declare queue for RPC
+        self.channel.queue_declare(queue="rpc_queue")
+
+    def consume(self):
         self.channel.basic_consume(
             queue=self.queue_name,
-            on_message_callback=on_message_callback,
+            on_message_callback=frame_callback,
             auto_ack=True,
         )
+        self.channel.basic_consume(
+            queue="rpc_queue",
+            on_message_callback=rpc_callback,
+        )
+
         logger.info("[*] Waiting for messages. To exit press CTRL+C")
         self.channel.start_consuming()
 
     def close(self):
         self.connection.close()
-
-

@@ -1,10 +1,9 @@
 from datetime import datetime
 
+from database.dao.zone import ZoneDAO
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-
-from database.dao.zone import ZoneDAO
 from web.api.utils import removeNoneParams
 
 router = APIRouter(prefix="/zone")

@@ -2,19 +2,20 @@ version: '3'
 
 services:
     rabbitmq:
+        hostname: ${RABBITMQ_HOST}
         image: 'rabbitmq:3-management'
         ports:
-            - '40000:5672'
-            - '41000:15672'
+            - ${RABBITMQ_MAPPED_PORT}:${RABBITMQ_PORT}
+            - ${RABBITMQ_MAPPED_MANAGEMENT_PORT}:${RABBITMQ_MANAGEMENT_PORT}
         healthcheck:
             test: [ 'CMD', 'rabbitmq-diagnostics', 'status' ]
             interval: 20s
             timeout: 10s
             retries: 10
         environment:
-            RABBITMQ_DEFAULT_USER: rabbitmq
-            RABBITMQ_DEFAULT_PASS: rabbitmq
-            RABBITMQ_DEFAULT_VHOST: /
+            RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+            RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
         networks:
             - bsm-micro
 
@@ -26,28 +27,41 @@ services:
             rabbitmq:
                 condition: service_healthy
         environment:
-            RABBITMQ_HOST: rabbitmq
-            RABBITMQ_PORT: 5672
-            RABBITMQ_USERNAME: rabbitmq
-            RABBITMQ_PASSWORD: rabbitmq
-            RABBITMQ_VHOST: /
-            RABBITMQ_EXCHANGE: frames
-            RABBITMQ_EXCHANGE_TYPE: fanout
-            RABBITMQ_HEARTBEAT_TIMEOUT: 3600
-            CAMERA_URL: rtsp://0.tcp.ap.ngrok.io:15034/user:1cinnovation;pwd:1cinnovation123
-            CAMERA_INFO: Living Room
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            RABBITMQ_USERNAME: ${RABBITMQ_USER}
+            RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+            RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+            RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
+            RABBITMQ_EXCHANGE_TYPE: ${RABBITMQ_EXCHANGE_TYPE}
+            RABBITMQ_HEARTBEAT: ${RABBITMQ_HEARTBEAT}
+            CAMERA_URL: ${CAMERA_URL}
+            CAMERA_INFO: ${CAMERA_INFO}
         networks:
             - bsm-micro
 
+    blob:
+        hostname: ${BLOB_HOST}
+        restart: always
+        build:
+            context: blob
+        ports:
+            - ${BLOB_MAPPED_PORT}:${BLOB_PORT}
+        networks:
+            - bsm-micro
+        volumes:
+            - ./blob/uploads:/uploads
+
     face-identification-db:
+        hostname: ${FACE_IDENTIFICATION_DB_HOST}
         image: postgres
         restart: always
         environment:
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: postgres
-            POSTGRES_DB: postgres
+            POSTGRES_USER: ${FACE_IDENTIFICATION_DB_USER}
+            POSTGRES_PASSWORD: ${FACE_IDENTIFICATION_DB_PASSWORD}
+            POSTGRES_DB: ${FACE_IDENTIFICATION_DB_NAME}
         ports:
-            - '42000:5432'
+            - ${FACE_IDENTIFICATION_DB_MAPPED_PORT}:${FACE_IDENTIFICATION_DB_PORT}
         networks:
             - bsm-micro
         healthcheck:
@@ -64,11 +78,11 @@ services:
             face-identification-db:
                 condition: service_healthy
         environment:
-            POSTGRES_HOST: face-identification-db
-            POSTGRES_PORT: 5432
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: postgres
-            POSTGRES_DB: postgres
+            POSTGRES_HOST: ${FACE_IDENTIFICATION_DB_HOST}
+            POSTGRES_PORT: ${FACE_IDENTIFICATION_DB_PORT}
+            POSTGRES_USER: ${FACE_IDENTIFICATION_DB_USER}
+            POSTGRES_PASSWORD: ${FACE_IDENTIFICATION_DB_PASSWORD}
+            POSTGRES_DB: ${FACE_IDENTIFICATION_DB_NAME}
         networks:
             - bsm-micro
 
@@ -84,42 +98,34 @@ services:
             face-identification-migrator:
                 condition: service_completed_successfully
         environment:
-            RABBITMQ_HOST: rabbitmq
-            RABBITMQ_PORT: 5672
-            RABBITMQ_USER: rabbitmq
-            RABBITMQ_PASSWORD: rabbitmq
-            RABBITMQ_VHOST: /
-            RABBITMQ_EXCHANGE: frames
-            RABBITMQ_HEARTBEAT_TIMEOUT: 3600
-            POSTGRES_HOST: face-identification-db
-            POSTGRES_PORT: 5432
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: postgres
-            POSTGRES_DB: postgres
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+            RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+            RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
+            RABBITMQ_HEARTBEAT_TIMEOUT: ${FACE_IDENTIFICATION_HOST_HEARTBEAT}
+            POSTGRES_HOST: ${FACE_IDENTIFICATION_DB_HOST}
+            POSTGRES_PORT: ${FACE_IDENTIFICATION_DB_PORT}
+            POSTGRES_USER: ${FACE_IDENTIFICATION_DB_USER}
+            POSTGRES_PASSWORD: ${FACE_IDENTIFICATION_DB_PASSWORD}
+            POSTGRES_DB: ${FACE_IDENTIFICATION_DB_NAME}
+            BLOB_HOST: ${BLOB_HOST}
+            BLOB_PORT: ${BLOB_PORT}
         networks:
             - bsm-micro
-
-    blob:
-        restart: always
-        build:
-            context: blob
-        ports:
-            - '43000:8000'
-        networks:
-            - bsm-micro
-        volumes:
-            - ./blob/uploads:/uploads
 
     gateway-api-db:
+        hostname: ${GATEWAY_API_DB_HOST}
         image: postgres
         ports:
-            - '44000:5432'
+            - ${GATEWAY_API_DB_MAPPED_PORT}:${GATEWAY_API_DB_PORT}
         networks:
             - bsm-micro
         environment:
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: postgres
-            POSTGRES_DB: postgres
+            POSTGRES_USER: ${GATEWAY_API_DB_USER}
+            POSTGRES_PASSWORD: ${GATEWAY_API_DB_PASS}
+            POSTGRES_DB: ${GATEWAY_API_DB_NAME}
         healthcheck:
             test: [ 'CMD', 'pg_isready', '-U', 'postgres' ]
             interval: 20s
@@ -131,11 +137,11 @@ services:
             context: gateway-api
             dockerfile: dockerfile.migrator
         environment:
-            BSM_SERVER_DB_HOST: gateway-api-db
-            BSM_SERVER_DB_PORT: 5432
-            BSM_SERVER_DB_USER: postgres
-            BSM_SERVER_DB_PASS: postgres
-            BSM_SERVER_DB_BASE: postgres
+            BSM_SERVER_DB_HOST: ${GATEWAY_API_DB_HOST}
+            BSM_SERVER_DB_PORT: ${GATEWAY_API_DB_PORT}
+            BSM_SERVER_DB_USER: ${GATEWAY_API_DB_USER}
+            BSM_SERVER_DB_PASS: ${GATEWAY_API_DB_PASS}
+            BSM_SERVER_DB_BASE: ${GATEWAY_API_DB_NAME}
         depends_on:
             gateway-api-db:
                 condition: service_healthy
@@ -147,7 +153,7 @@ services:
         build:
             context: gateway-api
         ports:
-            - '45000:8000'
+            - ${GATEWAY_API_MAPPED_PORT}:${GATEWAY_API_PORT}
         depends_on:
             rabbitmq:
                 condition: service_healthy
@@ -156,18 +162,18 @@ services:
             gateway-api-migrator:
                 condition: service_completed_successfully
         environment:
-            BSM_SERVER_RABBITMQ_HOST: rabbitmq
-            BSM_SERVER_RABBITMQ_PORT: 5672
-            BSM_SERVER_RABBITMQ_USER: rabbitmq
-            BSM_SERVER_RABBITMQ_PASS: rabbitmq
-            BSM_SERVER_RABBITMQ_VHOST: /
-            BSM_SERVER_RABBITMQ_EXCHANGE: frames
-            BSM_SERVER_RABBITMQ_HEARTBEAT_TIMEOUT: 3600
-            BSM_SERVER_DB_HOST: gateway-api-db
-            BSM_SERVER_DB_PORT: 5432
-            BSM_SERVER_DB_USER: postgres
-            BSM_SERVER_DB_PASS: postgres
-            BSM_SERVER_DB_BASE: postgres
+            BSM_SERVER_RABBITMQ_HOST: ${RABBITMQ_HOST}
+            BSM_SERVER_RABBITMQ_PORT: ${RABBITMQ_PORT}
+            BSM_SERVER_RABBITMQ_USER: ${RABBITMQ_USER}
+            BSM_SERVER_RABBITMQ_PASS: ${RABBITMQ_PASSWORD}
+            BSM_SERVER_RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+            BSM_SERVER_RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
+            BSM_SERVER_RABBITMQ_HEARTBEAT_TIMEOUT: ${GATEWAY_API_HOST_HEARTBEAT}
+            BSM_SERVER_DB_HOST: ${GATEWAY_API_DB_HOST}
+            BSM_SERVER_DB_PORT: ${GATEWAY_API_DB_PORT}
+            BSM_SERVER_DB_USER: ${GATEWAY_API_DB_USER}
+            BSM_SERVER_DB_PASS: ${GATEWAY_API_DB_PASS}
+            BSM_SERVER_DB_BASE: ${GATEWAY_API_DB_NAME}
         networks:
             - bsm-micro
 

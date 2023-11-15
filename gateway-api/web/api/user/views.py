@@ -1,10 +1,9 @@
 from typing import List
 
-from fastapi import APIRouter
-from fastapi.param_functions import Depends
-
 from database.dao.user import UserDAO
 from database.models.user import UserModel
+from fastapi import APIRouter
+from fastapi.param_functions import Depends
 from web.api.user.schema import UserModelInputDTO, UserOutputDTO
 
 router = APIRouter()

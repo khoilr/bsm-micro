@@ -1,10 +1,9 @@
 from datetime import datetime
 
+from database.dao.event import EventDAO
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-
-from database.dao.event import EventDAO
 from web.api.utils import removeNoneParams
 
 router = APIRouter(prefix="/event")

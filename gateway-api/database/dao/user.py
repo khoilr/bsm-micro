@@ -1,9 +1,8 @@
 import json
 from typing import List, Optional, Union
 
-from tortoise.exceptions import DoesNotExist
-
 from database.models.user import UserModel
+from tortoise.exceptions import DoesNotExist
 
 
 class UserDAO:

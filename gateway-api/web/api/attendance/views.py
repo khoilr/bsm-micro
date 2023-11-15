@@ -1,8 +1,7 @@
 import fastapi
+from database.dao.attendace import AttendanceTrackingDAO
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-
-from database.dao.attendace import AttendanceTrackingDAO
 
 router = APIRouter(prefix="/attendance")
 

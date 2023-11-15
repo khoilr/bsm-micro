@@ -2,16 +2,19 @@ import asyncio
 from importlib import metadata
 
 import socketio
+from database.config import TORTOISE_CONFIG
+from database.dao.user import UserDAO
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import UJSONResponse
 from tortoise.contrib.fastapi import register_tortoise
-
-from database.config import TORTOISE_CONFIG
-from database.dao.user import UserDAO
 from web.api.router import api_router
-from web.lifetime import (handleConnectedCLient, register_shutdown_event,
-                          register_socket_from_app, register_startup_event)
+from web.lifetime import (
+    handleConnectedCLient,
+    register_shutdown_event,
+    register_socket_from_app,
+    register_startup_event,
+)
 
 
 def get_app() -> FastAPI:

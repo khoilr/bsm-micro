@@ -1,13 +1,17 @@
-import pika
 import uuid
+
+import pika
+
 
 class FibonacciRpcClient(object):
     def __init__(self):
-        self.credential = pika.PlainCredentials('rabbitmq', 'rabbitmq')
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters('103.157.218.126', port=40000,credentials = self.credential))
+        self.credential = pika.PlainCredentials("rabbitmq", "rabbitmq")
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters("103.157.218.126", port=40000, credentials=self.credential)
+        )
         self.channel = self.connection.channel()
 
-        result = self.channel.queue_declare(queue='', exclusive=True)
+        result = self.channel.queue_declare(queue="", exclusive=True)
         self.callback_queue = result.method.queue
 
         self.channel.basic_consume(queue=self.callback_queue, on_message_callback=self.on_response, auto_ack=True)
@@ -20,14 +24,15 @@ class FibonacciRpcClient(object):
         self.response = None
         self.corr_id = str(uuid.uuid4())
         self.channel.basic_publish(
-            exchange='',
-            routing_key='rpc_queue',
+            exchange="",
+            routing_key="rpc_queue",
             properties=pika.BasicProperties(
                 reply_to=self.callback_queue,
                 correlation_id=self.corr_id,
             ),
-            body=str(n))    
-        
+            body=str('adasf'),
+        )
+
         while self.response is None:
             self.connection.process_data_events()
         return int(self.response)

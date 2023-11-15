@@ -4,13 +4,12 @@ import os
 from datetime import datetime, timedelta
 from typing import Any, Union
 
+from database.dao.user import UserDAO
+from database.models.user import UserModel
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-
-from database.dao.user import UserDAO
-from database.models.user import UserModel
 from utils.authentication.password import verify_password
 
 load_dotenv()

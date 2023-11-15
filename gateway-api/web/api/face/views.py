@@ -1,8 +1,7 @@
+from database.dao.face import FaceDAO
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-
-from database.dao.face import FaceDAO
 from web.api.utils import removeNoneParams
 
 router = APIRouter(prefix="/face")

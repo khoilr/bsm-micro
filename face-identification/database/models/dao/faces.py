@@ -1,18 +1,10 @@
-from dto.face import Face
+from database.models.dto.face import Face
 from database import session
 
 
 class FaceDAO:
     @staticmethod
-    def get(id: str):
-        face = session.query(Face).filter_by(id=id).first()
-        if face:
-            return face
-        else:
-            return None
-
-    @staticmethod
-    def insert_or_create(
+    def insert_or_get(
         image_url: str,
         drew_image_url: str,
         x: int,
@@ -21,7 +13,7 @@ class FaceDAO:
         height: int,
         person_id: str,
         camera_id: str,
-    ):
+    ) -> Face:
         face = (
             session.query(Face)
             .filter_by(
@@ -34,6 +26,7 @@ class FaceDAO:
             )
             .first()
         )
+
         if face:
             return face
         else:
@@ -50,3 +43,7 @@ class FaceDAO:
             session.add(new_face)
             session.commit()
             return new_face
+
+    @staticmethod
+    def get_faces_by_camera(camera_id) -> list[Face]:
+        return session.query(Face).filter_by(camera_id=camera_id).all()

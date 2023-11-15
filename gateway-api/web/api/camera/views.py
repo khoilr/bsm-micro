@@ -1,11 +1,10 @@
 import json
 from datetime import datetime
 
+from database.dao.camera import CameraDAO
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-
-from database.dao.camera import CameraDAO
 from web.api.utils import removeNoneParams
 
 router = APIRouter(prefix="/camera")
@@ -21,7 +20,6 @@ import asyncio
 
 from loguru import logger
 from redis.asyncio import ConnectionPool, Redis
-
 from services.redis.dependency import get_redis_pool
 
 

@@ -7,13 +7,12 @@ from typing import Awaitable, Callable
 
 import cv2
 import socketio
+from database.dao.camera import CameraDAO
+from database.dao.zone import ZoneDAO
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from loguru import logger
 from redis.asyncio import Redis
-
-from database.dao.camera import CameraDAO
-from database.dao.zone import ZoneDAO
 from services.redis.lifetime import init_redis, shutdown_redis
 from web.api.imagelive.socketmanager import SocketManager
 

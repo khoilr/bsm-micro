@@ -1,14 +1,13 @@
 import datetime
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from fastapi.security import OAuth2PasswordRequestForm
-from loguru import logger
-
 from database.dao.camera import CameraDAO
 from database.dao.person import PersonDAO
 from database.dao.user import UserDAO
 from database.models.user import UserModel
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi.security import OAuth2PasswordRequestForm
+from loguru import logger
 from utils import authentication
 from utils.authentication import password as auth_password
 from web.api.user.schema import UserOutputDTO

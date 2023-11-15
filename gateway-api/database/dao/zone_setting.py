@@ -1,8 +1,7 @@
 from typing import List, Union
 
-from tortoise.exceptions import DoesNotExist
-
 from database.models.zone_setting import ZoneSettingModel
+from tortoise.exceptions import DoesNotExist
 
 
 class ZoneSettingDAO:
