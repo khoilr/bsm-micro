@@ -44,7 +44,7 @@ class RabbitMQ:
         self.queue = self.channel.queue_declare(queue="", exclusive=True)
         self.queue_name = self.queue.method.queue
         self.channel.queue_bind(exchange=rabbitmq_exchange, queue=self.queue_name)
-
+    
     def consume(self, on_message_callback):
         self.channel.basic_consume(
             queue=self.queue_name,
@@ -56,3 +56,5 @@ class RabbitMQ:
 
     def close(self):
         self.connection.close()
+
+

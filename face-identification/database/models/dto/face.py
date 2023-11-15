@@ -13,10 +13,10 @@ class Face(Base):
     x = sa.Column(sa.Integer, nullable=False)
     y = sa.Column(sa.Integer, nullable=False)
     w = sa.Column(sa.Integer, nullable=False)
-    y = sa.Column(sa.Integer, nullable=False)
+    h = sa.Column(sa.Integer, nullable=False)
     created_at = sa.Column(sa.DateTime, nullable=False, server_default=sa.func.now())
     image_url = sa.Column(sa.String(255), nullable=False)
-    drawed_image_url = sa.Column(sa.String(255), nullable=False)
+    drew_image_url = sa.Column(sa.String(255), nullable=False)
 
     """Relationships"""
     # A face belongs to a person

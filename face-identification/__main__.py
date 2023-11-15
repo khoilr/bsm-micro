@@ -11,7 +11,10 @@ from logger import logger
 from processors.draw_info import draw_info
 from processors.recognize import recognize
 from rabbitmq import RabbitMQ
-
+from dotenv import load_dotenv
+from database.models.dao.camera import CameraDAO
+from database.models.dao.person import PersonDAO
+from database.models.dao.faces import FaceDAO
 from blob import upload
 
 load_dotenv()
@@ -64,9 +67,18 @@ def callback(ch, method, properties, body):  # pylint: disable=unused-argument
             image_blob = upload(image_temp)
 
             # Insert to database: camera (create if not exists), person (create if not exists), face
-            # camera = insert_or_get_camera(camera_info)
-            # person = insert_or_get_person(row['name'])
-            # face = insert_face(x: row['source_x'], y = row['source_y'], w = row['source_w'], h = row['source_h'], image_url = frame_blob['stored_name'], drew_image_url = image=image_blob['stored_name'], camera_id = camera.id, person_id = person.id)
+            camera = CameraDAO.insert_or_create(camera_info)
+            person = PersonDAO.insert_or_create(row["name"])
+            FaceDAO.insert_or_create(
+                x=row["source_x"],
+                y=row["source_y"],
+                w=row["source_w"],
+                h=row["source_h"],
+                image_url=frame_blob["stored_name"],
+                drew_image_url=image_blob["stored_name"],
+                camera_id=camera.id,
+                person_id=person.id,
+            )
 
             # Delete temp files
             os.remove(frame_temp)
