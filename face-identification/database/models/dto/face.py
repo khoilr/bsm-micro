@@ -1,9 +1,8 @@
 from uuid import uuid4
 
 import sqlalchemy as sa
-from sqlalchemy.orm import relationship
-
 from database import Base
+from sqlalchemy.orm import relationship
 
 
 class Face(Base):

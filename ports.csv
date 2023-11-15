@@ -1,0 +1,13 @@
+CONTAINER ID,NAMES,PORTS
+8fac8a3dd5b9,bsm-micro-face-identification-1,
+db3f87a21f93,bsm-micro-camera-frame-capture-1,
+7e5676d881a6,bsm-micro-face-identification-migrator-1,
+f9a3fe2920e5,bsm-micro-blob-1,"0.0.0.0:43000->8000/tcp, :::43000->8000/tcp"
+7fc359074cd6,bsm-micro-rabbitmq-1,"4369/tcp, 5671/tcp, 15671/tcp, 15691-15692/tcp, 25672/tcp, 0.0.0.0:40000->5672/tcp, :::40000->5672/tcp, 0.0.0.0:41000->15672/tcp, :::41000->15672/tcp"
+b00fcd167d96,bsm-micro-face-identification-db-1,"0.0.0.0:42000->5432/tcp, :::42000->5432/tcp"
+36ed6bdae573,bsm-server-1,"0.0.0.0:31000->8000/tcp, :::31000->8000/tcp"
+7ede06cc5141,bsm-migrator-1,
+162759cdc512,bsm-postgres-1,"0.0.0.0:30000->5432/tcp, :::30000->5432/tcp"
+041c9822fc3a,bsm-blob-1,"0.0.0.0:32000->8000/tcp, :::32000->8000/tcp"
+aed30bbf1ff1,bsm-deepface-1,
+92025e0cc3f2,face-db-1,

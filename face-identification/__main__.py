@@ -5,13 +5,12 @@ from datetime import datetime
 import cv2
 import numpy as np
 import pytz
-
 from constants import IMAGE_DIR
+from dotenv import load_dotenv
 from logger import logger
 from processors.draw_info import draw_info
 from processors.recognize import recognize
 from rabbitmq import RabbitMQ
-from dotenv import load_dotenv
 
 from blob import upload
 

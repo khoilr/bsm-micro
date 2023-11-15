@@ -19,9 +19,9 @@ DB_URL = f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@\
 Base = declarative_base()
 
 
-from database.models.dto.person import Person
-from database.models.dto.face import Face
 from database.models.dto.camera import Camera
+from database.models.dto.face import Face
+from database.models.dto.person import Person
 
 engine = create_engine(DB_URL)
 Session = sessionmaker(

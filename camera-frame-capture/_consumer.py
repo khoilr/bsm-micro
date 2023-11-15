@@ -1,6 +1,7 @@
 """Consumer example"""
 
 import json
+
 import pika
 
 # Connect to RabbitMQ

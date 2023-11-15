@@ -1,7 +1,7 @@
 import asyncio
 import json
-from aio_pika import connect, Message, ExchangeType
-import json
+
+from aio_pika import ExchangeType, Message, connect
 
 
 class RabbitMqProducerConfigure:
@@ -36,16 +36,12 @@ class RabbitmqProducer:
         )
 
         self.channel = await self.connection.channel()
-        self.exchange = await self.channel.declare_exchange(
-            self.config.exchange, ExchangeType.DIRECT
-        )
+        self.exchange = await self.channel.declare_exchange(self.config.exchange, ExchangeType.DIRECT)
 
     async def send_message(self, routing_key, message):
         message_body = json.dumps(message).encode()
         await self.exchange.publish(
-            Message(
-                body=message_body, content_type="application/json", delivery_mode=2
-            ),
+            Message(body=message_body, content_type="application/json", delivery_mode=2),
             routing_key=routing_key,
         )
         print(f"Sent {routing_key} message: {message}")
@@ -55,9 +51,7 @@ class RabbitmqProducer:
 
 
 async def main():
-    producer_config = RabbitMqProducerConfigure(
-        host="103.157.218.126", exchange="direct_logs"
-    )
+    producer_config = RabbitMqProducerConfigure(host="103.157.218.126", exchange="direct_logs")
     producer = RabbitmqProducer(config=producer_config)
     await producer.connect()
 

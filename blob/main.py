@@ -6,7 +6,6 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-
 from models import StorageDAO
 
 # Define a base path for uploads
@@ -63,9 +62,7 @@ async def download_file(filename: str):
         file_path = os.path.join(UPLOADS_DIR, filename)
 
         response = FileResponse(file_path)
-        response.headers[
-            "Content-Disposition"
-        ] = f'attachment; filename="{metadata["original_name"]}"'
+        response.headers["Content-Disposition"] = f'attachment; filename="{metadata["original_name"]}"'
         return response
     else:
         raise HTTPException(status_code=404, detail="File not found")
@@ -82,9 +79,7 @@ async def delete_file(filename: str):
         try:
             os.remove(file_path)
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Failed to delete the file: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail=f"Failed to delete the file: {str(e)}")
 
         StorageDAO.delete(filename)
         return {"message": "File deleted"}

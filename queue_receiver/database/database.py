@@ -1,8 +1,6 @@
-from .db_config import init_db, Session
-from .models import Person, Face
+from .db_config import Session, init_db
+from .models import Face, Person
 
 init_db()
 
 session = Session()
-
-

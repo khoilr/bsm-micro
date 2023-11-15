@@ -1,6 +1,6 @@
-from deepface import DeepFace
 import numpy as np
 import pandas as pd
+from deepface import DeepFace
 
 
 def recognize(frame: np.ndarray) -> list[pd.DataFrame]:

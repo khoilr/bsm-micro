@@ -1,8 +1,8 @@
-from ..models import Face
 from ..database import Session
+from ..models import Face
+
 
 class FaceDAO:
-    
     @staticmethod
     def get_all():
         with Session() as session:
@@ -31,7 +31,6 @@ class FaceDAO:
                         setattr(face, key, value)
                 session.commit()
             return face
-
 
     @staticmethod
     def delete_face(face_id):

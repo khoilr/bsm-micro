@@ -1,0 +1,11 @@
+[tool.aerich]
+tortoise_orm = "database.config.TORTOISE_CONFIG"
+location = "./database/migrations"
+src_folder = "./."
+
+[tool.black]
+line-length = 120
+exclude = "env"
+
+[tool.isort]
+skip = ["env"]

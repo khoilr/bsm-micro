@@ -1,10 +1,10 @@
 import asyncio
 import json
-from aio_pika import connect, ExchangeType
-from loguru import logger
-import json
+
+from aio_pika import ExchangeType, connect
 from database.dao import FaceDAO, PersonDAO
-from database.db_config import init_db, Session
+from database.db_config import Session, init_db
+from loguru import logger
 
 
 class MetaClass(type):
@@ -49,9 +49,7 @@ class RabbitmqServer:
         )
 
         self.channel = await self.connection.channel()
-        exchange = await self.channel.declare_exchange(
-            self.server.exchange, ExchangeType.DIRECT
-        )
+        exchange = await self.channel.declare_exchange(self.server.exchange, ExchangeType.DIRECT)
 
         for operation in ["create", "read", "update", "delete"]:
             queue_name = f"{self.server.queue}_{operation}"

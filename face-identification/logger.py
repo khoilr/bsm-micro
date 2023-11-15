@@ -1,5 +1,6 @@
-from loguru import logger
 from datetime import datetime
+
+from loguru import logger
 
 # config file name as current time in isoformat with .log extension, store in logs dir
 logger.add(

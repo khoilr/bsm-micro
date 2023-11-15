@@ -4,10 +4,14 @@ from datetime import datetime
 
 import cv2
 import pika
+from constants import (
+    FRAME_FREQUENCY,
+    MAX_CAP_OPEN_FAILURES,
+    MAX_READ_FRAME_FAILURES,
+    SEND_FRAME_FREQUENCY,
+)
 from dotenv import load_dotenv
 from loguru import logger
-
-from constants import FRAME_FREQUENCY, MAX_CAP_OPEN_FAILURES, MAX_READ_FRAME_FAILURES, SEND_FRAME_FREQUENCY
 
 load_dotenv()
 

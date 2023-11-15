@@ -34,7 +34,7 @@ services:
             RABBITMQ_EXCHANGE: frames
             RABBITMQ_EXCHANGE_TYPE: fanout
             RABBITMQ_HEARTBEAT_TIMEOUT: 3600
-            CAMERA_URL: rtsp://0.tcp.ap.ngrok.io:10708/user:1cinnovation;pwd:1cinnovation123
+            CAMERA_URL: rtsp://0.tcp.ap.ngrok.io:15034/user:1cinnovation;pwd:1cinnovation123
             CAMERA_INFO: Living Room
         networks:
             - bsm-micro
@@ -47,7 +47,7 @@ services:
             POSTGRES_PASSWORD: postgres
             POSTGRES_DB: postgres
         ports:
-            - '43000:5432'
+            - '42000:5432'
         networks:
             - bsm-micro
         healthcheck:
@@ -104,11 +104,72 @@ services:
         build:
             context: blob
         ports:
-            - '42000:8000'
+            - '43000:8000'
         networks:
             - bsm-micro
         volumes:
             - ./blob/uploads:/uploads
+
+    gateway-api-db:
+        image: postgres
+        ports:
+            - '44000:5432'
+        networks:
+            - bsm-micro
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: postgres
+        healthcheck:
+            test: [ 'CMD', 'pg_isready', '-U', 'postgres' ]
+            interval: 20s
+            timeout: 10s
+            retries: 10
+
+    gateway-api-migrator:
+        build:
+            context: gateway-api
+            dockerfile: dockerfile.migrator
+        environment:
+            BSM_SERVER_DB_HOST: gateway-api-db
+            BSM_SERVER_DB_PORT: 5432
+            BSM_SERVER_DB_USER: postgres
+            BSM_SERVER_DB_PASS: postgres
+            BSM_SERVER_DB_BASE: postgres
+        depends_on:
+            gateway-api-db:
+                condition: service_healthy
+        networks:
+            - bsm-micro
+
+    gateway-api:
+        restart: always
+        build:
+            context: gateway-api
+        ports:
+            - '45000:8000'
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
+            gateway-api-db:
+                condition: service_healthy
+            gateway-api-migrator:
+                condition: service_completed_successfully
+        environment:
+            BSM_SERVER_RABBITMQ_HOST: rabbitmq
+            BSM_SERVER_RABBITMQ_PORT: 5672
+            BSM_SERVER_RABBITMQ_USER: rabbitmq
+            BSM_SERVER_RABBITMQ_PASS: rabbitmq
+            BSM_SERVER_RABBITMQ_VHOST: /
+            BSM_SERVER_RABBITMQ_EXCHANGE: frames
+            BSM_SERVER_RABBITMQ_HEARTBEAT_TIMEOUT: 3600
+            BSM_SERVER_DB_HOST: gateway-api-db
+            BSM_SERVER_DB_PORT: 5432
+            BSM_SERVER_DB_USER: postgres
+            BSM_SERVER_DB_PASS: postgres
+            BSM_SERVER_DB_BASE: postgres
+        networks:
+            - bsm-micro
 
 networks:
     bsm-micro:

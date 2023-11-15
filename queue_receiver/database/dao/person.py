@@ -1,8 +1,8 @@
-from ..models import Person
 from ..database import Session
+from ..models import Person
+
 
 class PersonDAO:
-    
     @staticmethod
     def get_all():
         with Session() as session:
@@ -32,7 +32,6 @@ class PersonDAO:
                 session.commit()
             return person
 
-
     @staticmethod
     def delete_person(person_id):
         with Session() as session:
@@ -41,5 +40,3 @@ class PersonDAO:
                 session.delete(person)
                 session.commit()
             return person
-        
-    
