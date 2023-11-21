@@ -22,14 +22,9 @@ class LogDTO(BaseModel):
 
 
 @router.get("/")
-async def getAllLog(faceID: Optional[int] = None):
-    # logs = await EventLogDAO.get_all()
-    # if faceID:
-    #     logs = [log for log in logs if (str(log.face) == str(faceID))]
-    # print([log.to_json() for log in logs])
-    # return JSONResponse({"count": logs.__len__(), "data": [log.to_json() for log in logs]})
+async def getAllLog():
     camera_rpc_client = CameraRPCClient()
-    results = camera_rpc_client.call('Living Room')
+    results = camera_rpc_client.call("")
     return JSONResponse(json.loads(results))
 
 

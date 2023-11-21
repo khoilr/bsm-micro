@@ -51,3 +51,7 @@ class FaceDAO:
     @staticmethod
     def get_faces_by_camera_name(camera_name: str) -> list[Face]:
         return session.query(Face).join(Face.camera).filter_by(name=camera_name).all()
+
+    @staticmethod
+    def get_all() -> list[Face]:
+        return session.query(Face).all()

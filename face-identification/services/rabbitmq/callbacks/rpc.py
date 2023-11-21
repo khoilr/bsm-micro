@@ -6,8 +6,13 @@ from database.models.dao.face import FaceDAO
 
 
 def callback(ch, method, props, body):
-    faces = FaceDAO.get_faces_by_camera_name(body.decode("utf-8"))
-    faces = [face.to_dict() for face in faces]
+    body = body.decode("utf-8")
+    if not body:
+        faces = FaceDAO.get_all()
+        faces = [face.to_dict() for face in faces]
+    else:
+        faces = FaceDAO.get_faces_by_camera_name(body.decode("utf-8"))
+        faces = [face.to_dict() for face in faces]
 
     ch.basic_publish(
         exchange="",
