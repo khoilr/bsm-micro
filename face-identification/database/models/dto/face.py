@@ -26,3 +26,18 @@ class Face(Base):
     # A face belongs to a camera
     camera_id = sa.Column(sa.UUID, sa.ForeignKey("cameras.id"))
     camera = relationship("Camera", back_populates="faces")
+
+    def to_dict(self) -> dict:
+        return {
+            "id": str(self.id),
+            "x": self.x,
+            "y": self.y,
+            "w": self.w,
+            "h": self.h,
+            "created_at": int(self.created_at.timestamp()),
+            "image_url": self.image_url,
+            "drew_image_url": self.drew_image_url,
+            "person_name": self.person.name,
+            # "person": self.person.to_dict(),
+            # "camera": self.camera.to_dict(),
+        }

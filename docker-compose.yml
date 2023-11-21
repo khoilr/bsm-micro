@@ -4,6 +4,7 @@ services:
     rabbitmq:
         hostname: ${RABBITMQ_HOST}
         image: 'rabbitmq:3-management'
+        restart: always
         ports:
             - ${RABBITMQ_MAPPED_PORT}:${RABBITMQ_PORT}
             - ${RABBITMQ_MAPPED_MANAGEMENT_PORT}:${RABBITMQ_MANAGEMENT_PORT}
@@ -18,7 +19,17 @@ services:
             RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
         networks:
             - bsm-micro
-
+            
+    blob:
+        hostname: ${BLOB_HOST}
+        restart: always
+        build:
+            context: blob
+        ports:
+            - ${BLOB_MAPPED_PORT}:${BLOB_PORT}
+        networks:
+            - bsm-micro
+            
     camera-frame-capture:
         restart: always
         build:
@@ -29,28 +40,40 @@ services:
         environment:
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
-            RABBITMQ_USERNAME: ${RABBITMQ_USER}
+            RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
             RABBITMQ_VHOST: ${RABBITMQ_VHOST}
-            RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
-            RABBITMQ_EXCHANGE_TYPE: ${RABBITMQ_EXCHANGE_TYPE}
-            RABBITMQ_HEARTBEAT: ${RABBITMQ_HEARTBEAT}
-            CAMERA_URL: ${CAMERA_URL}
-            CAMERA_INFO: ${CAMERA_INFO}
+            CAMERA_FRAME_CAPTURE_HEARTBEAT: ${CAMERA_FRAME_CAPTURE_HEARTBEAT}
+            CAMERA_FRAME_CAPTURE_EXCHANGE: ${CAMERA_FRAME_CAPTURE_EXCHANGE}
+            CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE: ${CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE}
+            CAMERA_FRAME_CAPTURE_QUEUE: ${CAMERA_FRAME_CAPTURE_QUEUE}
+            CAMERA_FRAME_CAPTURE_CAMERA_URL: ${CAMERA_FRAME_CAPTURE_CAMERA_URL}
+            CAMERA_FRAME_CAPTURE_CAMERA_NAME: ${CAMERA_FRAME_CAPTURE_CAMERA_NAME}
         networks:
             - bsm-micro
-
-    blob:
-        hostname: ${BLOB_HOST}
+    
+    is-face-presented:
         restart: always
         build:
-            context: blob
-        ports:
-            - ${BLOB_MAPPED_PORT}:${BLOB_PORT}
+            context: is-face-presented
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
+        environment:
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+            RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+            IS_FACE_PRESENTED_HEARTBEAT: ${IS_FACE_PRESENTED_HEARTBEAT}
+            CAMERA_FRAME_CAPTURE_EXCHANGE: ${CAMERA_FRAME_CAPTURE_EXCHANGE}
+            CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE: ${CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE}
+            CAMERA_FRAME_CAPTURE_QUEUE: ${CAMERA_FRAME_CAPTURE_QUEUE}
+            IS_FACE_PRESENTED_EXCHANGE: ${IS_FACE_PRESENTED_EXCHANGE}
+            IS_FACE_PRESENTED_EXCHANGE_TYPE: ${IS_FACE_PRESENTED_EXCHANGE_TYPE}
+            IS_FACE_PRESENTED_QUEUE: ${IS_FACE_PRESENTED_QUEUE}
         networks:
             - bsm-micro
-        volumes:
-            - ./blob/uploads:/uploads
 
     face-identification-db:
         hostname: ${FACE_IDENTIFICATION_DB_HOST}
@@ -97,14 +120,19 @@ services:
                 condition: service_healthy
             face-identification-migrator:
                 condition: service_completed_successfully
+            blob:
+                condition: service_started
         environment:
             RABBITMQ_HOST: ${RABBITMQ_HOST}
             RABBITMQ_PORT: ${RABBITMQ_PORT}
             RABBITMQ_USER: ${RABBITMQ_USER}
             RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
             RABBITMQ_VHOST: ${RABBITMQ_VHOST}
-            RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
-            RABBITMQ_HEARTBEAT_TIMEOUT: ${FACE_IDENTIFICATION_HOST_HEARTBEAT}
+            FACE_IDENTIFICATION_HEARTBEAT: ${FACE_IDENTIFICATION_HEARTBEAT}
+            IS_FACE_PRESENTED_EXCHANGE: ${IS_FACE_PRESENTED_EXCHANGE}
+            IS_FACE_PRESENTED_EXCHANGE_TYPE: ${IS_FACE_PRESENTED_EXCHANGE_TYPE}
+            IS_FACE_PRESENTED_QUEUE: ${IS_FACE_PRESENTED_QUEUE}
+            FACE_IDENTIFICATION_RPC_QUEUE: ${FACE_IDENTIFICATION_RPC_QUEUE}
             POSTGRES_HOST: ${FACE_IDENTIFICATION_DB_HOST}
             POSTGRES_PORT: ${FACE_IDENTIFICATION_DB_PORT}
             POSTGRES_USER: ${FACE_IDENTIFICATION_DB_USER}
@@ -126,6 +154,8 @@ services:
             POSTGRES_USER: ${GATEWAY_API_DB_USER}
             POSTGRES_PASSWORD: ${GATEWAY_API_DB_PASS}
             POSTGRES_DB: ${GATEWAY_API_DB_NAME}
+        volumes:
+            - ./dump.sql:/docker-entrypoint-initdb.d/dump.sql
         healthcheck:
             test: [ 'CMD', 'pg_isready', '-U', 'postgres' ]
             interval: 20s
@@ -169,6 +199,7 @@ services:
             BSM_SERVER_RABBITMQ_VHOST: ${RABBITMQ_VHOST}
             BSM_SERVER_RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
             BSM_SERVER_RABBITMQ_HEARTBEAT_TIMEOUT: ${GATEWAY_API_HOST_HEARTBEAT}
+            BSM_SERVER_RABBITMQ_ROUTING_KEY: ${GATEWAY_API_ROUTING_KEY}
             BSM_SERVER_DB_HOST: ${GATEWAY_API_DB_HOST}
             BSM_SERVER_DB_PORT: ${GATEWAY_API_DB_PORT}
             BSM_SERVER_DB_USER: ${GATEWAY_API_DB_USER}

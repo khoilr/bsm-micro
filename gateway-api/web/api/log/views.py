@@ -1,9 +1,12 @@
+import json
 from typing import Optional
 
-from database.dao.event_log import EventLogDAO
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+
+from database.dao.event_log import EventLogDAO
+from services.rabbitmq import CameraRPCClient
 from web.api.utils import removeNoneParams
 
 router = APIRouter(prefix="/log")
@@ -20,35 +23,21 @@ class LogDTO(BaseModel):
 
 @router.get("/")
 async def getAllLog(faceID: Optional[int] = None):
-    logs = await EventLogDAO.get_all()
-    if faceID:
-        logs = [log for log in logs if (str(log.face) == str(faceID))]
-    print([log.to_json() for log in logs])
-    return JSONResponse({"count": logs.__len__(), "data": [log.to_json() for log in logs]})
+    # logs = await EventLogDAO.get_all()
+    # if faceID:
+    #     logs = [log for log in logs if (str(log.face) == str(faceID))]
+    # print([log.to_json() for log in logs])
+    # return JSONResponse({"count": logs.__len__(), "data": [log.to_json() for log in logs]})
+    camera_rpc_client = CameraRPCClient()
+    results = camera_rpc_client.call('Living Room')
+    return JSONResponse(json.loads(results))
 
 
-@router.get("/{id}")
-async def getLogByID(
-    id: str,
-):
-    try:
-        logID = int(id)
-        log = await EventLogDAO.get(logID)
-        if log:
-            return JSONResponse(log.to_json())
-        else:
-            return JSONResponse(
-                status_code=400,
-                content={"status": 400, "msg": f"Not found log with ID '{id}'"},
-            )
-    except Exception as e:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "status": 400,
-                "msg": e.__str__(),
-            },
-        )
+@router.get("/{name}")
+async def getLogByName(name: str):
+    camera_rpc_client = CameraRPCClient()
+    results = camera_rpc_client.call(name)
+    return JSONResponse(json.loads(results))
 
 
 @router.post("/")

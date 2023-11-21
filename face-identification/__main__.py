@@ -1,11 +1,16 @@
 import os
 
+from deepface import DeepFace
+
 from constants import IMAGE_DIR
-from services.logger import logger
+from logger import logger
 from services.rabbitmq import RabbitMQ
 
 # Create image dir
 os.makedirs(IMAGE_DIR, exist_ok=True)
+
+# Load VGG-Face model
+DeepFace.build_model("VGG-Face")
 
 
 def main():

@@ -1,4 +1,7 @@
 {
     "python.formatting.provider": "black",
-    "pylint.args": ["--ignored-modules=cv2"]
+    "pylint.args": [
+        "--ignored-modules=cv2",
+        "--max-line-length=120"
+    ]
 }

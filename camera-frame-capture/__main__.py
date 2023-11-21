@@ -3,29 +3,16 @@ import os
 from datetime import datetime
 
 import cv2
-import pika
-from constants import (
-    FRAME_FREQUENCY,
-    MAX_CAP_OPEN_FAILURES,
-    MAX_READ_FRAME_FAILURES,
-    SEND_FRAME_FREQUENCY,
-)
 from dotenv import load_dotenv
-from loguru import logger
 
-load_dotenv()
+from constants import FRAME_FREQUENCY, MAX_CAP_OPEN_FAILURES, MAX_READ_FRAME_FAILURES, SEND_FRAME_FREQUENCY
+from logger import logger
+from rabbitmq import RabbitMQ
 
 # Environment variables
-camera_url = os.environ.get("CAMERA_URL")
-camera_info = os.environ.get("CAMERA_INFO")
-rabbitmq_host = os.environ.get("RABBITMQ_HOST", "localhost")
-rabbitmq_port = os.environ.get("RABBITMQ_PORT", 5672)
-rabbitmq_username = os.environ.get("RABBITMQ_USERNAME", "guest")
-rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD", "guest")
-rabbitmq_vhost = os.environ.get("RABBITMQ_VHOST", "/")
-rabbitmq_exchange = os.environ.get("RABBITMQ_EXCHANGE", "frames")
-rabbitmq_exchange_type = os.environ.get("RABBITMQ_EXCHANGE_TYPE", "fanout")
-rabbitmq_heartbeat_timeout = int(os.environ.get("RABBITMQ_HEARTBEAT_TIMEOUT", 600))
+load_dotenv()
+camera_url = os.environ.get("CAMERA_FRAME_CAPTURE_CAMERA_URL")
+camera_name = os.environ.get("CAMERA_FRAME_CAPTURE_CAMERA_NAME")
 
 # Parse webcam (development)
 try:
@@ -33,38 +20,18 @@ try:
 except ValueError:
     pass
 
-# Configure logger
-logger.add(f"logs/{datetime.now().astimezone().isoformat()}.log", rotation="500 MB")
-
-# RabbitMQ connection
-credentials = pika.PlainCredentials(username=rabbitmq_username, password=rabbitmq_password)
-parameters = pika.ConnectionParameters(
-    host=rabbitmq_host,
-    port=rabbitmq_port,
-    virtual_host="/",
-    credentials=credentials,
-    heartbeat=rabbitmq_heartbeat_timeout,
-)
-connection = pika.BlockingConnection(parameters)
-channel = connection.channel()
-
-# RabbitMQ exchange
-channel.exchange_declare(exchange=rabbitmq_exchange, exchange_type=rabbitmq_exchange_type)
+# Init RabbitMQ
+rabbitmq = RabbitMQ()
 
 
 def send_frame_to_rabbitmq(frame):
     """Send a frame to the RabbitMQ exchange."""
     frame_info = {
-        "camera_info": camera_info,
+        "camera_name": camera_name,
         "frame": frame.tolist(),
         "timestamp": int(datetime.now().timestamp()),
     }
-    channel.basic_publish(
-        exchange=rabbitmq_exchange,
-        routing_key="",
-        body=json.dumps(frame_info),
-    )
-    logger.info(f'Sent frame to exchange "{rabbitmq_exchange}".')
+    rabbitmq.send(json.dumps(frame_info))
 
 
 def main():
@@ -116,4 +83,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    connection.close()
+    rabbitmq.close()

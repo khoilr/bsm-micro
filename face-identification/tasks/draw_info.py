@@ -11,11 +11,11 @@ def calculate_extended_bbox(x, y, w, h, frame_shape, extend_by=20) -> tuple:
     return extended_x, extended_y, extended_w, extended_h
 
 
-def draw_info(frame, face: pd.Series):
-    x = face["source_x"].values[0]
-    y = face["source_y"].values[0]
-    w = face["source_w"].values[0]
-    h = face["source_h"].values[0]
+def draw_info(frame, face: dict):
+    x = face["source_x"]
+    y = face["source_y"]
+    w = face["source_w"]
+    h = face["source_h"]
 
     extended_bbox = calculate_extended_bbox(x, y, w, h, frame.shape, extend_by=20)
     color = (255, 255, 0)
@@ -33,7 +33,7 @@ def draw_info(frame, face: pd.Series):
     # write name on the rectangle
     image = cv2.putText(
         image,
-        str(face["name"].values[0]),
+        str(face["name"]),
         (extended_bbox[0] - 10, extended_bbox[1] - 10),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.5,

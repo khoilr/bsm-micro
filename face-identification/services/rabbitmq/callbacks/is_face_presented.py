@@ -8,12 +8,12 @@ import pytz
 
 from constants import IMAGE_DIR
 from database.models.dao.camera import CameraDAO
-from database.models.dao.faces import FaceDAO
+from database.models.dao.face import FaceDAO
 from database.models.dao.person import PersonDAO
-from processors.draw_info import draw_info
-from processors.recognize import recognize
+from tasks.draw_info import draw_info
+from tasks.recognize import recognize
 from services.blob import upload
-from services.logger import logger
+from logger import logger
 
 
 def callback(ch, method, properties, body):  # pylint: disable=unused-argument
@@ -23,7 +23,7 @@ def callback(ch, method, properties, body):  # pylint: disable=unused-argument
     data = json.loads(body)
     frame = np.array(data["frame"], dtype=np.uint8)
     timestamp = datetime.fromtimestamp(data["timestamp"], tz=pytz.utc).astimezone()
-    camera_info = data["camera_info"]
+    camera_name = data["camera_name"]
 
     # Save frame to a temp file
     results = recognize(frame)
@@ -32,11 +32,7 @@ def callback(ch, method, properties, body):  # pylint: disable=unused-argument
         if not result.empty:
             name_counts = result["name"].value_counts()
             most_common_name = name_counts.idxmax()
-            appearance_times = name_counts.max()
-            row = result[result["name"] == most_common_name]
-
-            if appearance_times < 3:
-                row["name"] = "Unknown"
+            row = result[result["name"] == most_common_name].iloc[0].to_dict()
 
             image = draw_info(frame, row)
 
@@ -51,17 +47,18 @@ def callback(ch, method, properties, body):  # pylint: disable=unused-argument
             image_blob = upload(image_temp)
 
             # Insert to database: camera (create if not exists), person (create if not exists), face
-            camera = CameraDAO.insert_or_get(camera_info)
+            camera = CameraDAO.insert_or_get(camera_name)
             person = PersonDAO.insert_or_get(row["name"])
             FaceDAO.insert_or_get(
                 x=row["source_x"],
                 y=row["source_y"],
-                width=row["source_w"],
-                height=row["source_h"],
+                w=row["source_w"],
+                h=row["source_h"],
                 image_url=frame_blob["stored_name"],
                 drew_image_url=image_blob["stored_name"],
                 camera_id=camera.id,
                 person_id=person.id,
+                created_at=timestamp,
             )
 
             logger.info(f"Face {row['name']} detected")

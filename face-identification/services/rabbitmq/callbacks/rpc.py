@@ -1,12 +1,13 @@
-import pika
-from database.models.dao.faces import FaceDAO
 import json
 
+import pika
 
-# Define a function to handle requests and return responses
+from database.models.dao.face import FaceDAO
+
+
 def callback(ch, method, props, body):
-    faces = FaceDAO.get_faces_by_camera(str(body))
-    faces = [face.__dict__ for face in faces]
+    faces = FaceDAO.get_faces_by_camera_name(body.decode("utf-8"))
+    faces = [face.to_dict() for face in faces]
 
     ch.basic_publish(
         exchange="",
