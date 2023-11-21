@@ -19,6 +19,9 @@ rabbitmq_vhost = os.environ.get("RABBITMQ_VHOST", "/")
 is_face_presented_exchange = os.environ.get("IS_FACE_PRESENTED_EXCHANGE", "is_face_presented")
 is_face_presented_exchange_type = os.environ.get("IS_FACE_PRESENTED_EXCHANGE_TYPE", "fanout")
 is_face_presented_queue = os.environ.get("IS_FACE_PRESENTED_QUEUE", "is_face_presented")
+face_identification_exchange = os.environ.get("FACE_IDENTIFICATION_EXCHANGE", "face_identification")
+face_identification_exchange_type = os.environ.get("FACE_IDENTIFICATION_EXCHANGE_TYPE", "direct")
+face_identification_queue = os.environ.get("FACE_IDENTIFICATION_QUEUE", "face_identification")
 face_identification_heartbeat = int(os.environ.get("FACE_IDENTIFICATION_HEARTBEAT", 600))
 face_identification_rpc_queue = os.environ.get("FACE_IDENTIFICATION_RPC_QUEUE", "face_identification_rpc_queue")
 
@@ -48,6 +51,15 @@ class RabbitMQ:
 
         # Declare queue for RPC
         self.channel.queue_declare(queue=face_identification_rpc_queue)
+
+        # Declare queue for publishing face identification
+        self.channel.exchange_declare(
+            exchange=face_identification_exchange,
+            exchange_type=face_identification_exchange_type,
+            durable=True,
+        )
+        self.channel.queue_declare(queue=face_identification_queue, durable=True)
+        self.channel.queue_bind(exchange=face_identification_exchange, queue=face_identification_queue)
 
     def consume(self):
         self.channel.basic_consume(

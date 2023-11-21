@@ -5,15 +5,21 @@ from datetime import datetime
 import cv2
 import numpy as np
 import pytz
+from dotenv import load_dotenv
 
 from constants import IMAGE_DIR
 from database.models.dao.camera import CameraDAO
 from database.models.dao.face import FaceDAO
 from database.models.dao.person import PersonDAO
+from logger import logger
+from services.blob import upload
 from tasks.draw_info import draw_info
 from tasks.recognize import recognize
-from services.blob import upload
-from logger import logger
+
+# Environment variables
+load_dotenv()
+face_identification_exchange = os.environ.get("FACE_IDENTIFICATION_EXCHANGE", "face_identification")
+face_identification_queue = os.environ.get("FACE_IDENTIFICATION_QUEUE", "face_identification")
 
 
 def callback(ch, method, properties, body):  # pylint: disable=unused-argument
@@ -49,7 +55,7 @@ def callback(ch, method, properties, body):  # pylint: disable=unused-argument
             # Insert to database: camera (create if not exists), person (create if not exists), face
             camera = CameraDAO.insert_or_get(camera_name)
             person = PersonDAO.insert_or_get(row["name"])
-            FaceDAO.insert_or_get(
+            face = FaceDAO.insert_or_get(
                 x=row["source_x"],
                 y=row["source_y"],
                 w=row["source_w"],
@@ -66,3 +72,11 @@ def callback(ch, method, properties, body):  # pylint: disable=unused-argument
             # Delete temp files
             os.remove(frame_temp)
             os.remove(image_temp)
+
+            # publish to exchange
+            publish_data = face.to_dict()
+            ch.basic_publish(
+                exchange=face_identification_exchange,
+                routing_key=face_identification_queue,
+                body=json.dumps(publish_data),
+            )
