@@ -175,6 +175,8 @@ services:
             interval: 20s
             timeout: 10s
             retries: 10
+        networks:
+            - bsm-micro
 
     gateway-api-migrator:
         build:
@@ -186,12 +188,8 @@ services:
             BSM_SERVER_DB_USER: ${GATEWAY_API_DB_USER}
             BSM_SERVER_DB_PASS: ${GATEWAY_API_DB_PASS}
             BSM_SERVER_DB_BASE: ${GATEWAY_API_DB_NAME}
-            BSM_SERVER_REDIS_HOST: ${GATEWAY_API_REDIS_HOST}
-            BSM_SERVER_REDIS_PORT: :${GATEWAY_API_REDIS_PORT}
         depends_on:
             gateway-api-db:
-                condition: service_healthy
-            gateway-api-redis:
                 condition: service_healthy
         networks:
             - bsm-micro
@@ -206,6 +204,8 @@ services:
             rabbitmq:
                 condition: service_healthy
             gateway-api-db:
+                condition: service_healthy
+            gateway-api-redis:
                 condition: service_healthy
             gateway-api-migrator:
                 condition: service_completed_successfully
@@ -222,6 +222,8 @@ services:
             BSM_SERVER_DB_USER: ${GATEWAY_API_DB_USER}
             BSM_SERVER_DB_PASS: ${GATEWAY_API_DB_PASS}
             BSM_SERVER_DB_BASE: ${GATEWAY_API_DB_NAME}
+            BSM_SERVER_REDIS_HOST: ${GATEWAY_API_REDIS_HOST}
+            BSM_SERVER_REDIS_PORT: :${GATEWAY_API_REDIS_PORT}
         networks:
             - bsm-micro
 
