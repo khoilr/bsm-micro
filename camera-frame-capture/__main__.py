@@ -60,6 +60,8 @@ def main():
                 read_frame_failures_counter += 1
                 continue
 
+            frame = cv2.resize(frame, (240, 240 * 9 / 16))
+
             # Capture successfully
             read_frame_failures_counter = 0
 
