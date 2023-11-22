@@ -60,13 +60,12 @@ def main():
                 read_frame_failures_counter += 1
                 continue
 
-            frame = cv2.resize(frame, (240, 240 * 9 / 16))
-
             # Capture successfully
             read_frame_failures_counter = 0
 
             # Increment frames_counter and sent_frames_counter
             if frames_counter % FRAME_FREQUENCY == 0:
+                frame = cv2.resize(frame, (240, int(240 * 9 / 16)))
                 send_frame_to_rabbitmq(frame)
 
                 # Reset cap if sent_frames_counter reaches SEND_FRAME_FREQUENCY
