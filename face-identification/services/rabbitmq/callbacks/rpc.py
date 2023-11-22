@@ -7,11 +7,12 @@ from database.models.dao.face import FaceDAO
 
 def callback(ch, method, props, body):
     body = body.decode("utf-8")
+    print(body, bool(body))
     if not body:
         faces = FaceDAO.get_all()
         faces = [face.to_dict() for face in faces]
     else:
-        faces = FaceDAO.get_faces_by_camera_name(body.decode("utf-8"))
+        faces = FaceDAO.get_faces_by_camera_name(body)
         faces = [face.to_dict() for face in faces]
 
     ch.basic_publish(
