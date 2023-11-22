@@ -83,7 +83,7 @@ def register_startup_event(
         # zone = await ZoneDAO.create(description='blabla')
         # await CameraDAO.create(id=1, name='blabla', description="blabla",connect_uri="rtsp://0.tcp.ap.ngrok.io:10708/user:1cinnovation;pwd:1cinnovation123", type=1, zone=zone)
         app.middleware_stack = None
-        // init_redis(app)
+        # init_redis(app)
         app.middleware_stack = app.build_middleware_stack()
         pass  # noqa: WPS420
 
@@ -102,7 +102,7 @@ def register_shutdown_event(
 
     @app.on_event("shutdown")
     async def _shutdown() -> None:  # noqa: WPS430
-        // await shutdown_redis(app)
+        # await shutdown_redis(app)
         pass  # noqa: WPS420
 
     return _shutdown
