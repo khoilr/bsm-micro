@@ -23,7 +23,7 @@ class SocketManager:
         app: FastAPI,
         mount_location: str = "/ws",
         socketio_path: str = "sockets",
-        cors_allowed_origins: Union[str, list] = ["*", "http://localhost:3000"],
+        cors_allowed_origins: Union[str, list] = [],
         async_mode: str = "asgi",
         **kwargs
     ) -> None:
