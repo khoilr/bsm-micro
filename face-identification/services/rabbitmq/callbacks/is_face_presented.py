@@ -23,7 +23,7 @@ face_identification_queue = os.environ.get("FACE_IDENTIFICATION_QUEUE", "face_id
 
 
 def callback(ch, method, properties, body):  # pylint: disable=unused-argument
-    logger.info("[x] Received message")
+    logger.info("[x] Received message \"is_face_presented\" queue")
 
     # Get data from message
     data = json.loads(body)
