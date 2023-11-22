@@ -165,6 +165,17 @@ services:
             timeout: 10s
             retries: 10
 
+    gateway-api-redis:
+        hostname: ${GATEWAY_API_REDIS_HOST}
+        image: redis
+        ports: 
+            - ${GATEWAY_API_REDIS_MAPPED_PORT}:${GATEWAY_API_REDIS_PORT}
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 20s
+            timeout: 10s
+            retries: 10
+
     gateway-api-migrator:
         build:
             context: gateway-api
@@ -175,8 +186,12 @@ services:
             BSM_SERVER_DB_USER: ${GATEWAY_API_DB_USER}
             BSM_SERVER_DB_PASS: ${GATEWAY_API_DB_PASS}
             BSM_SERVER_DB_BASE: ${GATEWAY_API_DB_NAME}
+            BSM_SERVER_REDIS_HOST: ${GATEWAY_API_REDIS_HOST}
+            BSM_SERVER_REDIS_PORT: :${GATEWAY_API_REDIS_PORT}
         depends_on:
             gateway-api-db:
+                condition: service_healthy
+            gateway-api-redis:
                 condition: service_healthy
         networks:
             - bsm-micro
