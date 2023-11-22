@@ -223,7 +223,7 @@ services:
             BSM_SERVER_DB_PASS: ${GATEWAY_API_DB_PASS}
             BSM_SERVER_DB_BASE: ${GATEWAY_API_DB_NAME}
             BSM_SERVER_REDIS_HOST: ${GATEWAY_API_REDIS_HOST}
-            BSM_SERVER_REDIS_PORT: :${GATEWAY_API_REDIS_PORT}
+            BSM_SERVER_REDIS_PORT: ${GATEWAY_API_REDIS_PORT}
         networks:
             - bsm-micro
 
