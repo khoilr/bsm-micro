@@ -15,8 +15,6 @@ def recognize(frame: np.ndarray) -> list[pd.DataFrame]:
 
     results = []
     for recognized_face in recognized_faces:
-        recognized_face = pd.DataFrame(recognized_face, index=[0])
-
         # filter source_x and source_y != 0
         recognized_face = recognized_face[recognized_face["source_x"] != 0]
         recognized_face = recognized_face[recognized_face["source_y"] != 0]
