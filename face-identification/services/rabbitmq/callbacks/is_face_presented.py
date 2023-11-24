@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime
+from uuid import uuid4
 
 import cv2
 import numpy as np
@@ -23,7 +24,7 @@ face_identification_queue = os.environ.get("FACE_IDENTIFICATION_QUEUE", "face_id
 
 
 def callback(ch, method, properties, body):  # pylint: disable=unused-argument
-    logger.info("[x] Received message \"is_face_presented\" queue")
+    logger.info('[x] Received message "is_face_presented" queue')
 
     # Get data from message
     data = json.loads(body)
@@ -35,48 +36,56 @@ def callback(ch, method, properties, body):  # pylint: disable=unused-argument
     results = recognize(frame)
 
     for result in results:
-        if not result.empty:
-            name_counts = result["name"].value_counts()
-            most_common_name = name_counts.idxmax()
-            row = result[result["name"] == most_common_name].iloc[0].to_dict()
+        if result.empty:
+            continue
 
-            image = draw_info(frame, row)
+        name_counts = result["name"].value_counts()
+        most_common_name = name_counts.idxmax()
 
-            # Save frame and image into temp files
-            frame_temp = os.path.join(IMAGE_DIR, "frame.jpg")
-            image_temp = os.path.join(IMAGE_DIR, "image.jpg")
+        row = result[result["name"] == most_common_name].iloc[0].to_dict()
 
-            cv2.imwrite(frame_temp, frame)
-            cv2.imwrite(image_temp, image)
+        # When the most common name is not recognized at least 3 times, we consider it as UNKNOWN
+        if name_counts[most_common_name] < 4:
+            short_uuid = str(uuid4()).split("-", maxsplit=1)[0]
+            row["name"] = f"UNKNOWN {short_uuid}"
 
-            frame_blob = upload(frame_temp)
-            image_blob = upload(image_temp)
+        image = draw_info(frame, row)
 
-            # Insert to database: camera (create if not exists), person (create if not exists), face
-            camera = CameraDAO.insert_or_get(camera_name)
-            person = PersonDAO.insert_or_get(row["name"])
-            face = FaceDAO.insert_or_get(
-                x=row["source_x"],
-                y=row["source_y"],
-                w=row["source_w"],
-                h=row["source_h"],
-                image_url=frame_blob["stored_name"],
-                drew_image_url=image_blob["stored_name"],
-                camera_id=camera.id,
-                person_id=person.id,
-                created_at=timestamp,
-            )
+        # Save frame and image into temp files
+        frame_temp = os.path.join(IMAGE_DIR, "frame.jpg")
+        image_temp = os.path.join(IMAGE_DIR, "image.jpg")
 
-            logger.info(f"Face {row['name']} detected")
+        cv2.imwrite(frame_temp, frame)
+        cv2.imwrite(image_temp, image)
 
-            # Delete temp files
-            os.remove(frame_temp)
-            os.remove(image_temp)
+        frame_blob = upload(frame_temp)
+        image_blob = upload(image_temp)
 
-            # publish to exchange
-            publish_data = face.to_dict()
-            ch.basic_publish(
-                exchange=face_identification_exchange,
-                routing_key=face_identification_queue,
-                body=json.dumps(publish_data),
-            )
+        # Insert to database: camera (create if not exists), person (create if not exists), face
+        camera = CameraDAO.insert_or_get(camera_name)
+        person = PersonDAO.insert_or_get(row["name"])
+        face = FaceDAO.insert_or_get(
+            x=row["source_x"],
+            y=row["source_y"],
+            w=row["source_w"],
+            h=row["source_h"],
+            image_url=frame_blob["stored_name"],
+            drew_image_url=image_blob["stored_name"],
+            camera_id=camera.id,
+            person_id=person.id,
+            created_at=timestamp,
+        )
+
+        logger.info(f"Face {row['name']} detected")
+
+        # Delete temp files
+        os.remove(frame_temp)
+        os.remove(image_temp)
+
+        # publish to exchange
+        publish_data = face.to_dict()
+        ch.basic_publish(
+            exchange=face_identification_exchange,
+            routing_key=face_identification_queue,
+            body=json.dumps(publish_data),
+        )
