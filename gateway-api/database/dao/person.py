@@ -1,7 +1,6 @@
-from typing import List, Union
-
-from database.models.person import PersonModel
 from tortoise.exceptions import DoesNotExist
+from typing import List, Union
+from database.models.person import PersonModel
 
 
 class PersonDAO:
@@ -62,7 +61,7 @@ class PersonDAO:
         person = await PersonDAO.get(person_id)
         if person:
             updatedPerson = await person.update_from_dict(kwargs)
-            updatedPerson.save()
+            await updatedPerson.save()
             return updatedPerson
         return None
 

@@ -1,8 +1,7 @@
-import json
-from typing import List, Union
-
-from database.models.camera import CameraModel
 from tortoise.exceptions import DoesNotExist
+from typing import List, Union
+import json
+from database.models.camera import CameraModel
 
 
 class CameraDAO:
@@ -53,7 +52,7 @@ class CameraDAO:
         return await CameraModel.create(**kwargs)
 
     @staticmethod
-    async def update(camera_id: int, **kwargs) -> None:
+    async def update(camera_id: int, **kwargs):
         """
         Update a specific Camera using provided keyword arguments.
 
@@ -75,6 +74,7 @@ class CameraDAO:
         camera = await CameraDAO.get(camera_id)
         if camera:
             await camera.delete()
+            return camera
 
     @staticmethod
     def model_to_json(camera: CameraModel) -> dict:
