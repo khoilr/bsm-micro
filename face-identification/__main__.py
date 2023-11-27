@@ -15,7 +15,7 @@ for file in os.listdir(IMAGE_DIR):
         os.remove(os.path.join(IMAGE_DIR, file))
 
 # Load VGG-Face model
-DeepFace.build_model("VGG-Face")
+DeepFace.build_model("Facenet512")
 
 
 def main():

@@ -7,7 +7,7 @@ def recognize(frame: np.ndarray) -> list[pd.DataFrame]:
     recognized_faces = DeepFace.find(
         img_path=frame,
         db_path="images",
-        model_name="VGG-Face",
+        model_name="Facenet512",
         enforce_detection=False,
         detector_backend="opencv",
         silent=True,
