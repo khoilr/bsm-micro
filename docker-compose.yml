@@ -226,6 +226,30 @@ services:
             BSM_SERVER_REDIS_PORT: ${GATEWAY_API_REDIS_PORT}
         networks:
             - bsm-micro
+    
+    telegram-notification:
+        restart: always
+        build:
+            context: telegram-notification
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
+        environment:
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+            RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+            BLOB_HOST: ${BLOB_HOST}
+            BLOB_PORT: ${BLOB_PORT}
+            FACE_IDENTIFICATION_EXCHANGE: ${FACE_IDENTIFICATION_EXCHANGE}
+            FACE_IDENTIFICATION_EXCHANGE_TYPE: ${FACE_IDENTIFICATION_EXCHANGE_TYPE}
+            FACE_IDENTIFICATION_QUEUE: ${FACE_IDENTIFICATION_QUEUE}
+            TELEGRAM_NOTIFICATION_HEARTBEAT: ${TELEGRAM_NOTIFICATION_HEARTBEAT}
+            TELEGRAM_NOTIFICATION_BOT_TOKEN: ${TELEGRAM_NOTIFICATION_BOT_TOKEN}
+            TELEGRAM_NOTIFICATION_CHATID: ${TELEGRAM_NOTIFICATION_CHATID}
+        networks:
+            - bsm-micro
 
 networks:
     bsm-micro:
