@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from database.dao.camera import CameraDAO
 from pydantic import BaseModel, Field
 from datetime import datetime
-from server.web.api.utils import removeNoneParams
+from web.api.utils import removeNoneParams
 from loguru import logger
 
 
@@ -93,9 +93,7 @@ async def createCamera(camera: CameraCreateDTO):
         if createdCamera:
             return JSONResponse(status_code=201, content=createdCamera.to_json())
     except Exception as e:
-        return JSONResponse(
-            status_code=400, content={"status": 400, "msg": e.__str__()}
-        )
+        return JSONResponse(status_code=400, content={"status": 400, "msg": e.__str__()})
 
 
 @router.put("/{id}")
@@ -111,17 +109,13 @@ async def updateCamera(camera: CameraUpdateDTO, id: str):
             "zone_id": camera.zone_id,
         }
         logger.info(removeNoneParams(params=params))
-        updatedCamera = await CameraDAO.update(
-            camera_id=cameraID, **removeNoneParams(params)
-        )
+        updatedCamera = await CameraDAO.update(camera_id=cameraID, **removeNoneParams(params))
         if updatedCamera:
             return JSONResponse(status_code=200, content=updatedCamera.to_json())
         else:
             raise Exception("Not found camera to update")
     except Exception as e:
-        return JSONResponse(
-            status_code=400, content={"status": 400, "msg": e.__str__()}
-        )
+        return JSONResponse(status_code=400, content={"status": 400, "msg": e.__str__()})
 
 
 @router.delete("/{id}")
@@ -144,6 +138,4 @@ async def deleteCameraByID(id: str):
                 content={"status": 200, "msg": "Not found person to delete"},
             )
     except Exception as e:
-        return JSONResponse(
-            status_code=400, content={"status": 400, "msg": e.__str__()}
-        )
+        return JSONResponse(status_code=400, content={"status": 400, "msg": e.__str__()})

@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from database.dao.zone import ZoneDAO
 from pydantic import BaseModel, Field
-from server.web.api.utils import removeNoneParams
+from web.api.utils import removeNoneParams
 
 router = APIRouter(prefix="/zone")
 
@@ -25,9 +25,7 @@ class ZoneUpdateDTO(ZoneBaseDTO):
 @router.get("/")
 async def getAllZone():
     zones = await ZoneDAO.get_all()
-    return JSONResponse(
-        {"count": zones.__len__(), "data": [zone.to_json() for zone in zones]}
-    )
+    return JSONResponse({"count": zones.__len__(), "data": [zone.to_json() for zone in zones]})
 
 
 @router.get("/{id}")
@@ -66,9 +64,7 @@ async def createZone(zone: ZoneCreateDTO):
             return JSONResponse(status_code=201, content=createdZone.to_json())
     except Exception as e:
         logger.error(e)
-        return JSONResponse(
-            status_code=400, content={"status": 400, "msg": e.__str__()}
-        )
+        return JSONResponse(status_code=400, content={"status": 400, "msg": e.__str__()})
 
 
 @router.put("/{id}")
@@ -87,9 +83,7 @@ async def updateZone(zone: ZoneUpdateDTO, id: str):
         else:
             raise Exception("Not found zone to update")
     except Exception as e:
-        return JSONResponse(
-            status_code=400, content={"status": 400, "msg": e.__str__()}
-        )
+        return JSONResponse(status_code=400, content={"status": 400, "msg": e.__str__()})
 
 
 @router.delete("/{id}")
@@ -112,6 +106,4 @@ async def deleteZoneByID(id: str):
                 content={"status": 200, "msg": "Not found zone to delete"},
             )
     except Exception as e:
-        return JSONResponse(
-            status_code=400, content={"status": 400, "msg": e.__str__()}
-        )
+        return JSONResponse(status_code=400, content={"status": 400, "msg": e.__str__()})

@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from database.dao.person import PersonDAO
 from pydantic import BaseModel, Field
 from datetime import datetime
-from server.web.api.utils import removeNoneParams
+from web.api.utils import removeNoneParams
 
 router = APIRouter(prefix="/people")
 
@@ -21,9 +21,7 @@ class PersonDTO(BaseModel):
 async def getAllPeople():
     people = await PersonDAO.get_all()
     print([person.to_json() for person in people])
-    return JSONResponse(
-        {"count": people.__len__(), "data": [person.to_json() for person in people]}
-    )
+    return JSONResponse({"count": people.__len__(), "data": [person.to_json() for person in people]})
 
 
 @router.get("/{id}")
@@ -64,9 +62,7 @@ async def createPerson(person: PersonDTO):
         if createdUser:
             return JSONResponse(status_code=201, content=createdUser.to_json())
     except Exception as e:
-        return JSONResponse(
-            status_code=400, content={"status": 400, "msg": e.__str__()}
-        )
+        return JSONResponse(status_code=400, content={"status": 400, "msg": e.__str__()})
 
 
 @router.put("/{id}")
@@ -81,18 +77,14 @@ async def updatePerson(person: PersonDTO, id: str):
             "avatar_url": person.avatar_url,
             "position": person.position,
         }
-        updatedPerson = await PersonDAO.update(
-            person_id=personId, **removeNoneParams(params)
-        )
+        updatedPerson = await PersonDAO.update(person_id=personId, **removeNoneParams(params))
         print(updatedPerson.to_json())
         if updatedPerson:
             return JSONResponse(status_code=200, content=updatedPerson.to_json())
         else:
             raise Exception("Not found person to update")
     except Exception as e:
-        return JSONResponse(
-            status_code=400, content={"status": 400, "msg": e.__str__()}
-        )
+        return JSONResponse(status_code=400, content={"status": 400, "msg": e.__str__()})
 
 
 @router.delete("/{id}")
@@ -115,6 +107,4 @@ async def deletePersonByID(id: str):
                 content={"status": 200, "msg": "Not found person to delete"},
             )
     except Exception as e:
-        return JSONResponse(
-            status_code=400, content={"status": 400, "msg": e.__str__()}
-        )
+        return JSONResponse(status_code=400, content={"status": 400, "msg": e.__str__()})
