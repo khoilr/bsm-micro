@@ -14,7 +14,6 @@ rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD", "guest")
 rabbitmq_vhost = os.environ.get("RABBITMQ_VHOST", "/")
 camera_frame_capture_exchange = os.environ.get("CAMERA_FRAME_CAPTURE_EXCHANGE", "camera_frame_capture")
 camera_frame_capture_exchange_type = os.environ.get("CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE", "fanout")
-camera_frame_capture_queue = os.environ.get("CAMERA_FRAME_CAPTURE_QUEUE", "camera_frame_capture")
 camera_frame_capture_heartbeat = int(os.environ.get("CAMERA_FRAME_CAPTURE_HEARTBEAT", 600))
 camera_frame_capture_camera_url = os.environ.get("CAMERA_FRAME_CAPTURE_CAMERA_URL")
 camera_frame_capture_camera_name = os.environ.get("CAMERA_FRAME_CAPTURE_CAMERA_NAME")
@@ -39,19 +38,11 @@ class RabbitMQ:
             exchange_type=camera_frame_capture_exchange_type,
             durable=True,
         )
-        self.channel.queue_declare(
-            queue=camera_frame_capture_queue,
-            durable=True,
-        )
-        self.channel.queue_bind(
-            exchange=camera_frame_capture_exchange,
-            queue=camera_frame_capture_queue,
-        )
 
     def send(self, message: str):
         self.channel.basic_publish(
             exchange=camera_frame_capture_exchange,
-            routing_key=camera_frame_capture_queue,
+            routing_key="",
             body=message,
             properties=pika.BasicProperties(delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE),
         )
