@@ -5,7 +5,13 @@ from datetime import datetime
 import cv2
 from dotenv import load_dotenv
 
-from constants import FRAME_FREQUENCY, MAX_CAP_OPEN_FAILURES, MAX_READ_FRAME_FAILURES, SEND_FRAME_FREQUENCY, COMPRESS_WIDTH
+from constants import (
+    FRAME_FREQUENCY,
+    MAX_CAP_OPEN_FAILURES,
+    MAX_READ_FRAME_FAILURES,
+    SEND_FRAME_FREQUENCY,
+    COMPRESS_WIDTH,
+)
 from logger import logger
 from rabbitmq import RabbitMQ
 
@@ -65,7 +71,7 @@ def main():
 
             # Increment frames_counter and sent_frames_counter
             if frames_counter % FRAME_FREQUENCY == 0:
-                frame = cv2.resize(frame, (COMPRESS_WIDTH , int(COMPRESS_WIDTH  * 9 / 16)))
+                frame = cv2.resize(frame, (COMPRESS_WIDTH, int(COMPRESS_WIDTH * 9 / 16)))
                 send_frame_to_rabbitmq(frame)
 
                 # Reset cap if sent_frames_counter reaches SEND_FRAME_FREQUENCY
