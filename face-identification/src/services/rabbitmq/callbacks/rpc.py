@@ -7,16 +7,18 @@ from src.logger import logger
 
 
 def callback(ch, method, props, body):
-    logger.info("[x] Received message in \"rpc\" queue")
+    logger.info('[x] Received message in "rpc" queue')
 
-    body = body.decode("utf-8")
-    print(body, bool(body))
+    data = json.loads(body)
+    limit = data["limit"]
+    offset = data["offset"]
+    name = data["name"]
 
-    if not body:
-        faces = FaceDAO.get_all()
+    if not name:
+        faces = FaceDAO.get_all(limit=limit, offset=offset)
         faces = [face.to_dict() for face in faces]
     else:
-        faces = FaceDAO.get_faces_by_camera_name(body)
+        faces = FaceDAO.get_faces_by_camera_name(name)
         faces = [face.to_dict() for face in faces]
 
     ch.basic_publish(

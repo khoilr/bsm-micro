@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sqlalchemy import desc
 from src.database import session
 from src.database.models.dto.face import Face
 
@@ -54,5 +55,5 @@ class FaceDAO:
         return session.query(Face).join(Face.camera).filter_by(name=camera_name).all()
 
     @staticmethod
-    def get_all() -> list[Face]:
-        return session.query(Face).all()
+    def get_all(limit: int = 20, offset: int = 0) -> list[Face]:
+        return session.query(Face).order_by(desc(Face.created_at)).limit(limit).offset(offset).all()

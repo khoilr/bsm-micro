@@ -1,5 +1,7 @@
 import cv2
+import numpy as np
 import pandas as pd
+from PIL import Image, ImageDraw, ImageFont
 
 
 def calculate_extended_bbox(x, y, w, h, frame_shape, extend_by=20) -> tuple:
@@ -31,14 +33,19 @@ def draw_info(frame, face: dict):
     )
 
     # write name on the rectangle
-    image = cv2.putText(
-        image,
-        str(face["name"]),
-        (extended_bbox[0] - 10, extended_bbox[1] - 10),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.5,
-        color,
-        thickness,
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    pil_image = Image.fromarray(image)
+    font = ImageFont.truetype("src/fonts/JosefinSans-VariableFont_wght.ttf", 20)
+    draw = ImageDraw.Draw(pil_image)
+    draw.text(
+        xy=(extended_bbox[0] - 10, extended_bbox[1] - 10),
+        text=str(face["name"]),
+        fill="green",
+        font=font,
+        stroke_fill="green",
+        stroke_width=1,
+        thickness=1,
     )
+    image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
 
     return image

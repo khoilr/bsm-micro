@@ -38,6 +38,7 @@ class Face(Base):
             "created_at": int(self.created_at.timestamp()),
             "image_url": self.image_url,
             "drew_image_url": self.drew_image_url,
+            "person_id": str(self.person_id),
             "person_name": self.person.name,
             # "person": self.person.to_dict(),
             # "camera": self.camera.to_dict(),

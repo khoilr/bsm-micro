@@ -16,12 +16,16 @@ rabbitmq_port = os.environ.get("RABBITMQ_PORT", 5672)
 rabbitmq_user = os.environ.get("RABBITMQ_USER", "rabbitmq")
 rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD", "rabbitmq")
 rabbitmq_vhost = os.environ.get("RABBITMQ_VHOST", "/")
+
 is_face_presented_queue = os.environ.get("IS_FACE_PRESENTED_QUEUE", "is_face_presented")
+
 face_identification_exchange = os.environ.get("FACE_IDENTIFICATION_EXCHANGE", "face_identification")
-face_identification_exchange_type = os.environ.get("FACE_IDENTIFICATION_EXCHANGE_TYPE", "direct")
-face_identification_queue = os.environ.get("FACE_IDENTIFICATION_QUEUE", "face_identification")
 face_identification_heartbeat = int(os.environ.get("FACE_IDENTIFICATION_HEARTBEAT", 600))
+
 face_identification_rpc_queue = os.environ.get("FACE_IDENTIFICATION_RPC_QUEUE", "face_identification_rpc_queue")
+
+hrm_queue = os.environ.get("HRM_QUEUE", "hrm_queue")
+telegram_unknown_queue = os.environ.get("TELEGRAM_UNKNOWN_QUEUE", "telegram_unknown_queue")
 
 
 class RabbitMQ:
@@ -38,20 +42,20 @@ class RabbitMQ:
         self.connection = pika.BlockingConnection(parameters)
         self.channel = self.connection.channel()
 
-        # Listen to queue frames
+        # Consuming queues
         self.channel.queue_declare(queue=is_face_presented_queue, durable=True)
-
-        # Declare queue for RPC
         self.channel.queue_declare(queue=face_identification_rpc_queue)
 
-        # Declare queue for publishing face identification
+        # Publishing queues
         self.channel.exchange_declare(
             exchange=face_identification_exchange,
-            exchange_type=face_identification_exchange_type,
+            exchange_type="direct",
             durable=True,
         )
-        self.channel.queue_declare(queue=face_identification_queue, durable=True)
-        self.channel.queue_bind(exchange=face_identification_exchange, queue=face_identification_queue)
+        self.channel.queue_declare(queue=hrm_queue, durable=True)
+        self.channel.queue_declare(queue=telegram_unknown_queue, durable=True)
+        self.channel.queue_bind(exchange=face_identification_exchange, queue=hrm_queue)
+        self.channel.queue_bind(exchange=face_identification_exchange, queue=telegram_unknown_queue)
 
     def consume(self):
         self.channel.basic_consume(

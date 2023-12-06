@@ -22,9 +22,9 @@ class LogDTO(BaseModel):
 
 
 @router.get("/")
-async def getAllLog():
+async def getAllLog(limit: int = 20, offset: int = 0):
     camera_rpc_client = CameraRPCClient()
-    results = camera_rpc_client.call("")
+    results = camera_rpc_client.call(json.dumps({"name": "", "limit": limit, "offset": offset}))
     return JSONResponse(json.loads(results))
 
 

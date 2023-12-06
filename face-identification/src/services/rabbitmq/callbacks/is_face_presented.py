@@ -5,9 +5,9 @@ from uuid import uuid4
 
 import cv2
 import numpy as np
+import pika
 import pytz
 from dotenv import load_dotenv
-
 from src.constants import IMAGE_DIR
 from src.database.models.dao.camera import CameraDAO
 from src.database.models.dao.face import FaceDAO
@@ -20,15 +20,28 @@ from src.tasks.recognize import recognize
 # Environment variables
 load_dotenv()
 face_identification_exchange = os.environ.get("FACE_IDENTIFICATION_EXCHANGE", "face_identification")
-face_identification_queue = os.environ.get("FACE_IDENTIFICATION_QUEUE", "face_identification")
+hrm_queue = os.environ.get("HRM_QUEUE", "hrm_queue")
+telegram_unknown_queue = os.environ.get("TELEGRAM_UNKNOWN_QUEUE", "telegram_unknown_queue")
 
 
-def publish_face_identification(ch, face_dict):
+def publish_hrm(ch, face_dict):
     ch.basic_publish(
         exchange=face_identification_exchange,
-        routing_key="",
+        routing_key=hrm_queue,
         body=json.dumps(face_dict),
+        properties=pika.BasicProperties(delivery_mode=pika.DeliveryMode.Persistent),
     )
+    logger.info(f"Published to {hrm_queue}")
+
+
+def publish_telegram_unknown(ch, face_dict):
+    ch.basic_publish(
+        exchange=face_identification_exchange,
+        routing_key=telegram_unknown_queue,
+        body=json.dumps(face_dict),
+        properties=pika.BasicProperties(delivery_mode=pika.DeliveryMode.Persistent),
+    )
+    logger.info(f"Published to {telegram_unknown_queue}")
 
 
 def save_to_database(row, image, timestamp, camera_name):
@@ -86,11 +99,13 @@ def process_frame(ch, data):
         if name_counts[most_common_name] < 2:
             short_uuid = str(uuid4()).split("-", maxsplit=1)[0]
             row["name"] = f"UNKNOWN {short_uuid}"
+            face_dict = save_to_database(row, frame, timestamp, camera_name)
+            publish_telegram_unknown(ch, face_dict)
+        else:
+            face_dict = save_to_database(row, frame, timestamp, camera_name)
+            publish_hrm(ch, face_dict)
 
         logger.info(f"Recognized: {row['name']}")
-
-        face_dict = save_to_database(row, frame, timestamp, camera_name)
-        publish_face_identification(ch, face_dict)
 
 
 def callback(ch, method, properties, body):  # pylint: disable=unused-argument
