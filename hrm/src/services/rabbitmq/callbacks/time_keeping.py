@@ -122,11 +122,11 @@ def callback(ch, method, properties, body):
 
         # Checkin between 7:00AM and 10:00AM
         # and no checkin today
-        if 7 <= now.hour <= 10 and not time:
+        if 7 <= now.hour <= 12 and not time:
             # if now.hour <= 12 and not time:
             checkin(employee, data["drew_image_url"], ch)
         # Checkout after 5:30PM
         # and have checked in
-        # and not checked out
+        # and haven't checked out
         elif now.hour >= 17 and now.minute >= 30 and time and not time.completed:
             checkout(time, data["drew_image_url"], ch)

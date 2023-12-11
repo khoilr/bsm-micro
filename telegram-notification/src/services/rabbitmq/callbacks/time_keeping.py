@@ -17,7 +17,7 @@ def send_telegram_message(data: any):
     else:
         time = datetime.fromtimestamp(int(data["checkin_at"]))
         file_url = get_blob_url(str(data["checkin_img"]))
-        message = f"{data['employee_name']} đã check out lúc {time.strftime('%Y/%m/%d, %H:%M:%S')}"
+        message = f"{data['employee_name']} đã check in lúc {time.strftime('%Y/%m/%d, %H:%M:%S')}"
 
     download_image_file(file_url)
 

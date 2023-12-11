@@ -324,6 +324,32 @@ services:
             - bsm-micro
     ###################################################################################
 
+    ###################### Registry New Face ######################
+    registry-new-face:
+        hostname: ${REGISTRY_NEW_FACE_HOST}
+        restart: always
+        build:
+            context: registry-new-face
+        ports:
+            - ${REGISTRY_NEW_FACE_MAPPED_PORT}:${REGISTRY_NEW_FACE_PORT}
+        networks:
+            - bsm-micro
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
+        environment: 
+            RABBITMQ_HOST: ${RABBITMQ_HOST}
+            RABBITMQ_PORT: ${RABBITMQ_PORT}
+            RABBITMQ_USER: ${RABBITMQ_USER}
+            RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+            RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+            REGISTRY_NEW_FACE_EXCHANGE: ${REGISTRY_NEW_FACE_EXCHANGE}
+            REGISTRY_NEW_FACE_HEARTBEAT: ${REGISTRY_NEW_FACE_HEARTBEAT}
+            REGISTRY_NEW_FACE_QUEUE: ${REGISTRY_NEW_FACE_QUEUE}
+            BLOB_HOST: ${BLOB_HOST}
+            BLOB_PORT: ${BLOB_PORT}
+    ###############################################################
+
 networks:
     bsm-micro:
         driver: bridge

@@ -18,11 +18,15 @@ rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD", "rabbitmq")
 rabbitmq_vhost = os.environ.get("RABBITMQ_VHOST", "/")
 
 is_face_presented_queue = os.environ.get("IS_FACE_PRESENTED_QUEUE", "is_face_presented")
-
+registry_new_face_queue = os.environ.get("REGISTRY_NEW_FACE_QUEUE", "registry_new_face")
 face_identification_exchange = os.environ.get("FACE_IDENTIFICATION_EXCHANGE", "face_identification")
 face_identification_heartbeat = int(os.environ.get("FACE_IDENTIFICATION_HEARTBEAT", 600))
 
 face_identification_rpc_queue = os.environ.get("FACE_IDENTIFICATION_RPC_QUEUE", "face_identification_rpc_queue")
+face_identification_registry_new_face_queue = os.environ.get(
+    "FACE_IDENTIFICATION_REGISTRY_NEW_FACE_QUEUE",
+    "face_identification_registry_new_face_queue",
+)
 
 hrm_queue = os.environ.get("HRM_QUEUE", "hrm_queue")
 telegram_unknown_queue = os.environ.get("TELEGRAM_UNKNOWN_QUEUE", "telegram_unknown_queue")
@@ -45,6 +49,7 @@ class RabbitMQ:
         # Consuming queues
         self.channel.queue_declare(queue=is_face_presented_queue, durable=True)
         self.channel.queue_declare(queue=face_identification_rpc_queue)
+        self.channel.queue_declare(queue=face_identification_registry_new_face_queue, durable=True)
 
         # Publishing queues
         self.channel.exchange_declare(
