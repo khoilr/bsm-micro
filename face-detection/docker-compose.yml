@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+    is-face-presented:
+        restart: always
+        build:
+            context: .
+        environment:
+            RABBITMQ_HOST: rabbitmq
+            RABBITMQ_PORT: 5672
+            RABBITMQ_USER: khoilr
+            RABBITMQ_PASSWORD: khoilr
+            RABBITMQ_VHOST: bsm
+        networks:
+            - bsm
+        volumes:
+            - ./logs:/app/logs
+
+networks:
+    bsm:
+        external: true
