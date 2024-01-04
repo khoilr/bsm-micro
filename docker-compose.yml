@@ -1,355 +1,354 @@
-version: '3'
+version: '3.8'
 
 services:
     ############################### RabbitMQ ###############################
-    rabbitmq:                          
-        hostname: ${RABBITMQ_HOST}                                           
-        image: 'rabbitmq:3-management'                                       
-        restart: always                                                      
-        ports:                                                               
-            - ${RABBITMQ_MAPPED_PORT}:${RABBITMQ_PORT}                       
-            - ${RABBITMQ_MAPPED_MANAGEMENT_PORT}:${RABBITMQ_MANAGEMENT_PORT}
+    rabbitmq:
+        image: rabbitmq:3.13-rc-management-alpine
+        ports:
+            - '40000:5672'
+            - '41000:15672'
+        networks:
+            - bsm
         healthcheck:
-            test: [ 'CMD', 'rabbitmq-diagnostics', 'status' ]
-            interval: 20s
-            timeout: 10s
+            test: ['CMD', 'rabbitmqctl', 'status']
+            interval: 10s
+            timeout: 5s
             retries: 10
-        environment:
-            RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-            RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
-        networks:
-            - bsm-micro
-    ########################################################################
-    
-    ############### Blob Service ###############
-    blob:
-        hostname: ${BLOB_HOST}
-        restart: always
-        build:
-            context: blob
-        ports:
-            - ${BLOB_MAPPED_PORT}:${BLOB_PORT}
-        networks:
-            - bsm-micro
-    ############################################
-
-    ########################### Camera Frame Capture Service ###########################
-    camera-frame-capture:
-        restart: always
-        build:
-            context: camera-frame-capture
-        depends_on:
-            rabbitmq:
-                condition: service_healthy
-        environment:
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-            RABBITMQ_VHOST: ${RABBITMQ_VHOST}
-            CAMERA_FRAME_CAPTURE_HEARTBEAT: ${CAMERA_FRAME_CAPTURE_HEARTBEAT}
-            CAMERA_FRAME_CAPTURE_EXCHANGE: ${CAMERA_FRAME_CAPTURE_EXCHANGE}
-            CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE: ${CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE}
-            CAMERA_FRAME_CAPTURE_CAMERA_URL: ${CAMERA_FRAME_CAPTURE_CAMERA_URL}
-            CAMERA_FRAME_CAPTURE_CAMERA_NAME: ${CAMERA_FRAME_CAPTURE_CAMERA_NAME}
-        networks:
-            - bsm-micro
-    ####################################################################################
-
-    ############################# Is Face Presented Service #############################    
-    is-face-presented:
-        restart: always
-        build:
-            context: is-face-presented
-        depends_on:
-            rabbitmq:
-                condition: service_healthy
-        environment:
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-            RABBITMQ_VHOST: ${RABBITMQ_VHOST}
-            CAMERA_FRAME_CAPTURE_EXCHANGE: ${CAMERA_FRAME_CAPTURE_EXCHANGE}
-            CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE: ${CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE}
-            IS_FACE_PRESENTED_EXCHANGE: ${IS_FACE_PRESENTED_EXCHANGE}
-            IS_FACE_PRESENTED_EXCHANGE_TYPE: ${IS_FACE_PRESENTED_EXCHANGE_TYPE}
-            IS_FACE_PRESENTED_QUEUE: ${IS_FACE_PRESENTED_QUEUE}
-            IS_FACE_PRESENTED_HEARTBEAT: ${IS_FACE_PRESENTED_HEARTBEAT}
-        networks:
-            - bsm-micro
-    #####################################################################################
-
-    ######################### Face Identification Service #########################
-    face-identification-db:
-        hostname: ${FACE_IDENTIFICATION_DB_HOST}
-        image: postgres
-        restart: always
-        environment:
-            POSTGRES_USER: ${FACE_IDENTIFICATION_DB_USER}
-            POSTGRES_PASSWORD: ${FACE_IDENTIFICATION_DB_PASSWORD}
-            POSTGRES_DB: ${FACE_IDENTIFICATION_DB_NAME}
-        ports:
-            - ${FACE_IDENTIFICATION_DB_MAPPED_PORT}:${FACE_IDENTIFICATION_DB_PORT}
-        networks:
-            - bsm-micro
-        healthcheck:
-            test: [ 'CMD', 'pg_isready', '-U', 'postgres' ]
-            interval: 20s
-            timeout: 10s
-            retries: 10
-
-    face-identification-migrator:
-        build:
-            context: face-identification
-            dockerfile: dockerfile.migrator
-        depends_on:
-            face-identification-db:
-                condition: service_healthy
-        environment:
-            POSTGRES_HOST: ${FACE_IDENTIFICATION_DB_HOST}
-            POSTGRES_PORT: ${FACE_IDENTIFICATION_DB_PORT}
-            POSTGRES_USER: ${FACE_IDENTIFICATION_DB_USER}
-            POSTGRES_PASSWORD: ${FACE_IDENTIFICATION_DB_PASSWORD}
-            POSTGRES_DB: ${FACE_IDENTIFICATION_DB_NAME}
-        networks:
-            - bsm-micro
-
-    face-identification:
-        restart: always
-        build:
-            context: face-identification
-        depends_on:
-            rabbitmq:
-                condition: service_healthy
-            face-identification-db:
-                condition: service_healthy
-            face-identification-migrator:
-                condition: service_completed_successfully
-            blob:
-                condition: service_started
-        environment:
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-            RABBITMQ_VHOST: ${RABBITMQ_VHOST}
-            FACE_IDENTIFICATION_HEARTBEAT: ${FACE_IDENTIFICATION_HEARTBEAT}
-            FACE_IDENTIFICATION_EXCHANGE: ${FACE_IDENTIFICATION_EXCHANGE}
-            FACE_IDENTIFICATION_RPC_QUEUE: ${FACE_IDENTIFICATION_RPC_QUEUE}
-            HRM_QUEUE: ${HRM_QUEUE}
-            TELEGRAM_UNKNOWN_QUEUE: ${TELEGRAM_UNKNOWN_QUEUE}
-            IS_FACE_PRESENTED_QUEUE: ${IS_FACE_PRESENTED_QUEUE}
-            POSTGRES_HOST: ${FACE_IDENTIFICATION_DB_HOST}
-            POSTGRES_PORT: ${FACE_IDENTIFICATION_DB_PORT}
-            POSTGRES_USER: ${FACE_IDENTIFICATION_DB_USER}
-            POSTGRES_PASSWORD: ${FACE_IDENTIFICATION_DB_PASSWORD}
-            POSTGRES_DB: ${FACE_IDENTIFICATION_DB_NAME}
-            BLOB_HOST: ${BLOB_HOST}
-            BLOB_PORT: ${BLOB_PORT}
-        networks:
-            - bsm-micro
-    ###############################################################################
-
-    ################################ Gateway API Service ################################
-    gateway-api-db:
-        hostname: ${GATEWAY_API_DB_HOST}
-        image: postgres
-        ports:
-            - ${GATEWAY_API_DB_MAPPED_PORT}:${GATEWAY_API_DB_PORT}
-        networks:
-            - bsm-micro
-        environment:
-            POSTGRES_USER: ${GATEWAY_API_DB_USER}
-            POSTGRES_PASSWORD: ${GATEWAY_API_DB_PASS}
-            POSTGRES_DB: ${GATEWAY_API_DB_NAME}
         volumes:
-            - ./dump.sql:/docker-entrypoint-initdb.d/dump.sql
-        healthcheck:
-            test: [ 'CMD', 'pg_isready', '-U', 'postgres' ]
-            interval: 20s
-            timeout: 10s
-            retries: 10
+            - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+            - ./definitions.json:/etc/rabbitmq/definitions.json
 
-    gateway-api-redis:
-        hostname: ${GATEWAY_API_REDIS_HOST}
-        image: redis
-        ports: 
-            - ${GATEWAY_API_REDIS_MAPPED_PORT}:${GATEWAY_API_REDIS_PORT}
-        healthcheck:
-            test: ["CMD", "redis-cli", "ping"]
-            interval: 20s
-            timeout: 10s
-            retries: 10
-        networks:
-            - bsm-micro
+    ########################################################################
 
-    gateway-api-migrator:
-        build:
-            context: gateway-api
-            dockerfile: dockerfile.migrator
-        environment:
-            BSM_SERVER_DB_HOST: ${GATEWAY_API_DB_HOST}
-            BSM_SERVER_DB_PORT: ${GATEWAY_API_DB_PORT}
-            BSM_SERVER_DB_USER: ${GATEWAY_API_DB_USER}
-            BSM_SERVER_DB_PASS: ${GATEWAY_API_DB_PASS}
-            BSM_SERVER_DB_BASE: ${GATEWAY_API_DB_NAME}
-        depends_on:
-            gateway-api-db:
-                condition: service_healthy
-        networks:
-            - bsm-micro
+    # ############### Blob Service ###############
+    # blob:
+    #     hostname: ${BLOB_HOST}
+    #     restart: always
+    #     build:
+    #         context: blob
+    #     ports:
+    #         - ${BLOB_MAPPED_PORT}:${BLOB_PORT}
+    #     networks:
+    #         - bsm-micro
+    # ############################################
 
-    gateway-api:
-        restart: always
-        build:
-            context: gateway-api
-        ports:
-            - ${GATEWAY_API_MAPPED_PORT}:${GATEWAY_API_PORT}
-        depends_on:
-            rabbitmq:
-                condition: service_healthy
-            gateway-api-db:
-                condition: service_healthy
-            gateway-api-redis:
-                condition: service_healthy
-            gateway-api-migrator:
-                condition: service_completed_successfully
-        environment:
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-            RABBITMQ_VHOST:  ${RABBITMQ_VHOST}
-            GATEWAY_API_HEARTBEAT: ${GATEWAY_API_HEARTBEAT}
-            FACE_IDENTIFICATION_RPC_QUEUE: ${FACE_IDENTIFICATION_RPC_QUEUE}
-            BSM_SERVER_DB_HOST: ${GATEWAY_API_DB_HOST}
-            BSM_SERVER_DB_PORT: ${GATEWAY_API_DB_PORT}
-            BSM_SERVER_DB_USER: ${GATEWAY_API_DB_USER}
-            BSM_SERVER_DB_PASS: ${GATEWAY_API_DB_PASS}
-            BSM_SERVER_DB_BASE: ${GATEWAY_API_DB_NAME}
-            BSM_SERVER_REDIS_HOST: ${GATEWAY_API_REDIS_HOST}
-            BSM_SERVER_REDIS_PORT: ${GATEWAY_API_REDIS_PORT}
-        networks:
-            - bsm-micro
-    #####################################################################################
-    
-    ############################# Telegram Notification Service #############################
-    telegram-notification:
-        restart: always
-        build:
-            context: telegram-notification
-        depends_on:
-            rabbitmq:
-                condition: service_healthy
-        environment:
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-            RABBITMQ_VHOST: ${RABBITMQ_VHOST}
-            BLOB_HOST: ${BLOB_HOST}
-            BLOB_PORT: ${BLOB_PORT}
-            TELEGRAM_NOTIFICATION_HEARTBEAT: ${TELEGRAM_NOTIFICATION_HEARTBEAT}
-            TELEGRAM_NOTIFICATION_BOT_TOKEN: ${TELEGRAM_NOTIFICATION_BOT_TOKEN}
-            TELEGRAM_NOTIFICATION_CHATID: ${TELEGRAM_NOTIFICATION_CHATID}
-            TELEGRAM_UNKNOWN_QUEUE: ${TELEGRAM_UNKNOWN_QUEUE}
-            TELEGRAM_TIME_KEEPING_QUEUE: ${TELEGRAM_TIME_KEEPING_QUEUE}
-        networks:
-            - bsm-micro
-    ########################################################################################
+    # ########################### Camera Frame Capture Service ###########################
+    # camera-frame-capture:
+    #     restart: always
+    #     build:
+    #         context: camera-frame-capture
+    #     depends_on:
+    #         rabbitmq:
+    #             condition: service_healthy
+    #     environment:
+    #         RABBITMQ_HOST: ${RABBITMQ_HOST}
+    #         RABBITMQ_PORT: ${RABBITMQ_PORT}
+    #         RABBITMQ_USER: ${RABBITMQ_USER}
+    #         RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    #         RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+    #         CAMERA_FRAME_CAPTURE_HEARTBEAT: ${CAMERA_FRAME_CAPTURE_HEARTBEAT}
+    #         CAMERA_FRAME_CAPTURE_EXCHANGE: ${CAMERA_FRAME_CAPTURE_EXCHANGE}
+    #         CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE: ${CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE}
+    #         CAMERA_FRAME_CAPTURE_CAMERA_URL: ${CAMERA_FRAME_CAPTURE_CAMERA_URL}
+    #         CAMERA_FRAME_CAPTURE_CAMERA_NAME: ${CAMERA_FRAME_CAPTURE_CAMERA_NAME}
+    #     networks:
+    #         - bsm-micro
+    # ####################################################################################
 
-    ################################### HRM Service ###################################
-    hrm-db:
-        hostname: ${HRM_DB_HOST}
-        image: postgres
-        ports:
-            - ${HRM_DB_MAPPED_PORT}:${HRM_DB_PORT}
-        networks:
-            - bsm-micro
-        environment:
-            POSTGRES_USER: ${HRM_DB_USER}
-            POSTGRES_PASSWORD: ${HRM_DB_PASS}
-            POSTGRES_DB: ${HRM_DB_NAME}
-        healthcheck:
-            test: [ 'CMD', 'pg_isready', '-U', 'postgres' ]
-            interval: 20s
-            timeout: 10s
-            retries: 10
+    # ############################# Is Face Presented Service #############################
+    # is-face-presented:
+    #     restart: always
+    #     build:
+    #         context: is-face-presented
+    #     depends_on:
+    #         rabbitmq:
+    #             condition: service_healthy
+    #     environment:
+    #         RABBITMQ_HOST: ${RABBITMQ_HOST}
+    #         RABBITMQ_PORT: ${RABBITMQ_PORT}
+    #         RABBITMQ_USER: ${RABBITMQ_USER}
+    #         RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    #         RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+    #         CAMERA_FRAME_CAPTURE_EXCHANGE: ${CAMERA_FRAME_CAPTURE_EXCHANGE}
+    #         CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE: ${CAMERA_FRAME_CAPTURE_EXCHANGE_TYPE}
+    #         IS_FACE_PRESENTED_EXCHANGE: ${IS_FACE_PRESENTED_EXCHANGE}
+    #         IS_FACE_PRESENTED_EXCHANGE_TYPE: ${IS_FACE_PRESENTED_EXCHANGE_TYPE}
+    #         IS_FACE_PRESENTED_QUEUE: ${IS_FACE_PRESENTED_QUEUE}
+    #         IS_FACE_PRESENTED_HEARTBEAT: ${IS_FACE_PRESENTED_HEARTBEAT}
+    #     networks:
+    #         - bsm-micro
+    # #####################################################################################
 
-    hrm-migrator: 
-        build:
-            context: hrm
-            dockerfile: dockerfile.migrator
-        environment:
-            HRM_DB_HOST: ${HRM_DB_HOST}
-            HRM_DB_PORT: ${HRM_DB_PORT}
-            HRM_DB_USER: ${HRM_DB_USER}
-            HRM_DB_PASS: ${HRM_DB_PASS}
-            HRM_DB_NAME: ${HRM_DB_NAME}
-        depends_on:
-            hrm-db:
-                condition: service_healthy
-        networks:
-            - bsm-micro
-    
-    hrm: 
-        restart: always
-        build:
-            context: hrm
-        depends_on:
-            rabbitmq:
-                condition: service_healthy
-            hrm-db:
-                condition: service_healthy
-            hrm-migrator:
-                condition: service_completed_successfully
-        environment:
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-            RABBITMQ_VHOST: ${RABBITMQ_VHOST}
-            HRM_HEARTBEAT: ${HRM_HEARTBEAT}
-            HRM_QUEUE: ${HRM_QUEUE}
-            HRM_DB_HOST: ${HRM_DB_HOST}
-            HRM_DB_PORT: ${HRM_DB_PORT}
-            HRM_DB_USER: ${HRM_DB_USER}
-            HRM_DB_PASS: ${HRM_DB_PASS}
-            HRM_DB_NAME: ${HRM_DB_NAME}
-            TELEGRAM_TIME_KEEPING_QUEUE: ${TELEGRAM_TIME_KEEPING_QUEUE}
+    # ######################### Face Identification Service #########################
+    # face-identification-db:
+    #     hostname: ${FACE_IDENTIFICATION_DB_HOST}
+    #     image: postgres
+    #     restart: always
+    #     environment:
+    #         POSTGRES_USER: ${FACE_IDENTIFICATION_DB_USER}
+    #         POSTGRES_PASSWORD: ${FACE_IDENTIFICATION_DB_PASSWORD}
+    #         POSTGRES_DB: ${FACE_IDENTIFICATION_DB_NAME}
+    #     ports:
+    #         - ${FACE_IDENTIFICATION_DB_MAPPED_PORT}:${FACE_IDENTIFICATION_DB_PORT}
+    #     networks:
+    #         - bsm-micro
+    #     healthcheck:
+    #         test: ['CMD', 'pg_isready', '-U', 'postgres']
+    #         interval: 20s
+    #         timeout: 10s
+    #         retries: 10
 
-        networks:
-            - bsm-micro
-    ###################################################################################
+    # face-identification-migrator:
+    #     build:
+    #         context: face-identification
+    #         dockerfile: dockerfile.migrator
+    #     depends_on:
+    #         face-identification-db:
+    #             condition: service_healthy
+    #     environment:
+    #         POSTGRES_HOST: ${FACE_IDENTIFICATION_DB_HOST}
+    #         POSTGRES_PORT: ${FACE_IDENTIFICATION_DB_PORT}
+    #         POSTGRES_USER: ${FACE_IDENTIFICATION_DB_USER}
+    #         POSTGRES_PASSWORD: ${FACE_IDENTIFICATION_DB_PASSWORD}
+    #         POSTGRES_DB: ${FACE_IDENTIFICATION_DB_NAME}
+    #     networks:
+    #         - bsm-micro
 
-    ###################### Registry New Face ######################
-    registry-new-face:
-        hostname: ${REGISTRY_NEW_FACE_HOST}
-        restart: always
-        build:
-            context: registry-new-face
-        ports:
-            - ${REGISTRY_NEW_FACE_MAPPED_PORT}:${REGISTRY_NEW_FACE_PORT}
-        networks:
-            - bsm-micro
-        depends_on:
-            rabbitmq:
-                condition: service_healthy
-        environment: 
-            RABBITMQ_HOST: ${RABBITMQ_HOST}
-            RABBITMQ_PORT: ${RABBITMQ_PORT}
-            RABBITMQ_USER: ${RABBITMQ_USER}
-            RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-            RABBITMQ_VHOST: ${RABBITMQ_VHOST}
-            REGISTRY_NEW_FACE_EXCHANGE: ${REGISTRY_NEW_FACE_EXCHANGE}
-            REGISTRY_NEW_FACE_HEARTBEAT: ${REGISTRY_NEW_FACE_HEARTBEAT}
-            REGISTRY_NEW_FACE_QUEUE: ${REGISTRY_NEW_FACE_QUEUE}
-            BLOB_HOST: ${BLOB_HOST}
-            BLOB_PORT: ${BLOB_PORT}
-    ###############################################################
+    # face-identification:
+    #     restart: always
+    #     build:
+    #         context: face-identification
+    #     depends_on:
+    #         rabbitmq:
+    #             condition: service_healthy
+    #         face-identification-db:
+    #             condition: service_healthy
+    #         face-identification-migrator:
+    #             condition: service_completed_successfully
+    #         blob:
+    #             condition: service_started
+    #     environment:
+    #         RABBITMQ_HOST: ${RABBITMQ_HOST}
+    #         RABBITMQ_PORT: ${RABBITMQ_PORT}
+    #         RABBITMQ_USER: ${RABBITMQ_USER}
+    #         RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    #         RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+    #         FACE_IDENTIFICATION_HEARTBEAT: ${FACE_IDENTIFICATION_HEARTBEAT}
+    #         FACE_IDENTIFICATION_EXCHANGE: ${FACE_IDENTIFICATION_EXCHANGE}
+    #         FACE_IDENTIFICATION_RPC_QUEUE: ${FACE_IDENTIFICATION_RPC_QUEUE}
+    #         HRM_QUEUE: ${HRM_QUEUE}
+    #         TELEGRAM_UNKNOWN_QUEUE: ${TELEGRAM_UNKNOWN_QUEUE}
+    #         IS_FACE_PRESENTED_QUEUE: ${IS_FACE_PRESENTED_QUEUE}
+    #         POSTGRES_HOST: ${FACE_IDENTIFICATION_DB_HOST}
+    #         POSTGRES_PORT: ${FACE_IDENTIFICATION_DB_PORT}
+    #         POSTGRES_USER: ${FACE_IDENTIFICATION_DB_USER}
+    #         POSTGRES_PASSWORD: ${FACE_IDENTIFICATION_DB_PASSWORD}
+    #         POSTGRES_DB: ${FACE_IDENTIFICATION_DB_NAME}
+    #         BLOB_HOST: ${BLOB_HOST}
+    #         BLOB_PORT: ${BLOB_PORT}
+    #     networks:
+    #         - bsm-micro
+    # ###############################################################################
+
+    # ################################ Gateway API Service ################################
+    # gateway-api-db:
+    #     hostname: ${GATEWAY_API_DB_HOST}
+    #     image: postgres
+    #     ports:
+    #         - ${GATEWAY_API_DB_MAPPED_PORT}:${GATEWAY_API_DB_PORT}
+    #     networks:
+    #         - bsm-micro
+    #     environment:
+    #         POSTGRES_USER: ${GATEWAY_API_DB_USER}
+    #         POSTGRES_PASSWORD: ${GATEWAY_API_DB_PASS}
+    #         POSTGRES_DB: ${GATEWAY_API_DB_NAME}
+    #     volumes:
+    #         - ./dump.sql:/docker-entrypoint-initdb.d/dump.sql
+    #     healthcheck:
+    #         test: ['CMD', 'pg_isready', '-U', 'postgres']
+    #         interval: 20s
+    #         timeout: 10s
+    #         retries: 10
+
+    # gateway-api-redis:
+    #     hostname: ${GATEWAY_API_REDIS_HOST}
+    #     image: redis
+    #     ports:
+    #         - ${GATEWAY_API_REDIS_MAPPED_PORT}:${GATEWAY_API_REDIS_PORT}
+    #     healthcheck:
+    #         test: ['CMD', 'redis-cli', 'ping']
+    #         interval: 20s
+    #         timeout: 10s
+    #         retries: 10
+    #     networks:
+    #         - bsm-micro
+
+    # gateway-api-migrator:
+    #     build:
+    #         context: gateway-api
+    #         dockerfile: dockerfile.migrator
+    #     environment:
+    #         BSM_SERVER_DB_HOST: ${GATEWAY_API_DB_HOST}
+    #         BSM_SERVER_DB_PORT: ${GATEWAY_API_DB_PORT}
+    #         BSM_SERVER_DB_USER: ${GATEWAY_API_DB_USER}
+    #         BSM_SERVER_DB_PASS: ${GATEWAY_API_DB_PASS}
+    #         BSM_SERVER_DB_BASE: ${GATEWAY_API_DB_NAME}
+    #     depends_on:
+    #         gateway-api-db:
+    #             condition: service_healthy
+    #     networks:
+    #         - bsm-micro
+
+    # gateway-api:
+    #     restart: always
+    #     build:
+    #         context: gateway-api
+    #     ports:
+    #         - ${GATEWAY_API_MAPPED_PORT}:${GATEWAY_API_PORT}
+    #     depends_on:
+    #         rabbitmq:
+    #             condition: service_healthy
+    #         gateway-api-db:
+    #             condition: service_healthy
+    #         gateway-api-redis:
+    #             condition: service_healthy
+    #         gateway-api-migrator:
+    #             condition: service_completed_successfully
+    #     environment:
+    #         RABBITMQ_HOST: ${RABBITMQ_HOST}
+    #         RABBITMQ_PORT: ${RABBITMQ_PORT}
+    #         RABBITMQ_USER: ${RABBITMQ_USER}
+    #         RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    #         RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+    #         GATEWAY_API_HEARTBEAT: ${GATEWAY_API_HEARTBEAT}
+    #         FACE_IDENTIFICATION_RPC_QUEUE: ${FACE_IDENTIFICATION_RPC_QUEUE}
+    #         BSM_SERVER_DB_HOST: ${GATEWAY_API_DB_HOST}
+    #         BSM_SERVER_DB_PORT: ${GATEWAY_API_DB_PORT}
+    #         BSM_SERVER_DB_USER: ${GATEWAY_API_DB_USER}
+    #         BSM_SERVER_DB_PASS: ${GATEWAY_API_DB_PASS}
+    #         BSM_SERVER_DB_BASE: ${GATEWAY_API_DB_NAME}
+    #         BSM_SERVER_REDIS_HOST: ${GATEWAY_API_REDIS_HOST}
+    #         BSM_SERVER_REDIS_PORT: ${GATEWAY_API_REDIS_PORT}
+    #     networks:
+    #         - bsm-micro
+    # #####################################################################################
+
+    # ############################# Telegram Notification Service #############################
+    # telegram-notification:
+    #     restart: always
+    #     build:
+    #         context: telegram-notification
+    #     depends_on:
+    #         rabbitmq:
+    #             condition: service_healthy
+    #     environment:
+    #         RABBITMQ_HOST: ${RABBITMQ_HOST}
+    #         RABBITMQ_PORT: ${RABBITMQ_PORT}
+    #         RABBITMQ_USER: ${RABBITMQ_USER}
+    #         RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    #         RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+    #         BLOB_HOST: ${BLOB_HOST}
+    #         BLOB_PORT: ${BLOB_PORT}
+    #         TELEGRAM_NOTIFICATION_HEARTBEAT: ${TELEGRAM_NOTIFICATION_HEARTBEAT}
+    #         TELEGRAM_NOTIFICATION_BOT_TOKEN: ${TELEGRAM_NOTIFICATION_BOT_TOKEN}
+    #         TELEGRAM_NOTIFICATION_CHATID: ${TELEGRAM_NOTIFICATION_CHATID}
+    #         TELEGRAM_UNKNOWN_QUEUE: ${TELEGRAM_UNKNOWN_QUEUE}
+    #         TELEGRAM_TIME_KEEPING_QUEUE: ${TELEGRAM_TIME_KEEPING_QUEUE}
+    #     networks:
+    #         - bsm-micro
+    # ########################################################################################
+
+    # ################################### HRM Service ###################################
+    # hrm-db:
+    #     hostname: ${HRM_DB_HOST}
+    #     image: postgres
+    #     ports:
+    #         - ${HRM_DB_MAPPED_PORT}:${HRM_DB_PORT}
+    #     networks:
+    #         - bsm-micro
+    #     environment:
+    #         POSTGRES_USER: ${HRM_DB_USER}
+    #         POSTGRES_PASSWORD: ${HRM_DB_PASS}
+    #         POSTGRES_DB: ${HRM_DB_NAME}
+    #     healthcheck:
+    #         test: ['CMD', 'pg_isready', '-U', 'postgres']
+    #         interval: 20s
+    #         timeout: 10s
+    #         retries: 10
+
+    # hrm-migrator:
+    #     build:
+    #         context: hrm
+    #         dockerfile: dockerfile.migrator
+    #     environment:
+    #         HRM_DB_HOST: ${HRM_DB_HOST}
+    #         HRM_DB_PORT: ${HRM_DB_PORT}
+    #         HRM_DB_USER: ${HRM_DB_USER}
+    #         HRM_DB_PASS: ${HRM_DB_PASS}
+    #         HRM_DB_NAME: ${HRM_DB_NAME}
+    #     depends_on:
+    #         hrm-db:
+    #             condition: service_healthy
+    #     networks:
+    #         - bsm-micro
+
+    # hrm:
+    #     restart: always
+    #     build:
+    #         context: hrm
+    #     depends_on:
+    #         rabbitmq:
+    #             condition: service_healthy
+    #         hrm-db:
+    #             condition: service_healthy
+    #         hrm-migrator:
+    #             condition: service_completed_successfully
+    #     environment:
+    #         RABBITMQ_HOST: ${RABBITMQ_HOST}
+    #         RABBITMQ_PORT: ${RABBITMQ_PORT}
+    #         RABBITMQ_USER: ${RABBITMQ_USER}
+    #         RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    #         RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+    #         HRM_HEARTBEAT: ${HRM_HEARTBEAT}
+    #         HRM_QUEUE: ${HRM_QUEUE}
+    #         HRM_DB_HOST: ${HRM_DB_HOST}
+    #         HRM_DB_PORT: ${HRM_DB_PORT}
+    #         HRM_DB_USER: ${HRM_DB_USER}
+    #         HRM_DB_PASS: ${HRM_DB_PASS}
+    #         HRM_DB_NAME: ${HRM_DB_NAME}
+    #         TELEGRAM_TIME_KEEPING_QUEUE: ${TELEGRAM_TIME_KEEPING_QUEUE}
+
+    #     networks:
+    #         - bsm-micro
+    # ###################################################################################
+
+    # ###################### Registry New Face ######################
+    # registry-new-face:
+    #     hostname: ${REGISTRY_NEW_FACE_HOST}
+    #     restart: always
+    #     build:
+    #         context: registry-new-face
+    #     ports:
+    #         - ${REGISTRY_NEW_FACE_MAPPED_PORT}:${REGISTRY_NEW_FACE_PORT}
+    #     networks:
+    #         - bsm-micro
+    #     depends_on:
+    #         rabbitmq:
+    #             condition: service_healthy
+    #     environment:
+    #         RABBITMQ_HOST: ${RABBITMQ_HOST}
+    #         RABBITMQ_PORT: ${RABBITMQ_PORT}
+    #         RABBITMQ_USER: ${RABBITMQ_USER}
+    #         RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    #         RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+    #         REGISTRY_NEW_FACE_EXCHANGE: ${REGISTRY_NEW_FACE_EXCHANGE}
+    #         REGISTRY_NEW_FACE_HEARTBEAT: ${REGISTRY_NEW_FACE_HEARTBEAT}
+    #         REGISTRY_NEW_FACE_QUEUE: ${REGISTRY_NEW_FACE_QUEUE}
+    #         BLOB_HOST: ${BLOB_HOST}
+    #         BLOB_PORT: ${BLOB_PORT}
+    # ###############################################################
 
 networks:
-    bsm-micro:
+    bsm:
         driver: bridge
+        name: bsm
